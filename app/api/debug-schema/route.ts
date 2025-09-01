@@ -17,9 +17,7 @@ export async function GET() {
     try {
       const dbResult = await executeQuerySingle('SELECT DATABASE() as db_name')
       results.database = dbResult?.db_name || 'unknown'
-    } catch (error) {
-      results.database = `Error: ${error.message}`
-    }
+    } catch (error) { const e = error as any; \n      results.database = Error: \n    }
 
     // Get all tables
     try {
@@ -30,9 +28,7 @@ export async function GET() {
         ORDER BY TABLE_NAME
       `)
       results.tables = tables.map(t => ({ name: t.TABLE_NAME, rows: t.TABLE_ROWS || 0 }))
-    } catch (error) {
-      results.tables = [`Error: ${error.message}`]
-    }
+    } catch (error) { const e = error as any; \n      results.database = Error: \n    }
 
     // Check certificates table columns
     try {
@@ -48,9 +44,7 @@ export async function GET() {
         nullable: col.IS_NULLABLE === 'YES',
         default: col.COLUMN_DEFAULT
       }))
-    } catch (error) {
-      results.certificatesColumns = [`Error: ${error.message}`]
-    }
+    } catch (error) { const e = error as any; \n      results.database = Error: \n    }
 
     // Check students table columns
     try {
@@ -65,9 +59,7 @@ export async function GET() {
         type: col.DATA_TYPE,
         nullable: col.IS_NULLABLE === 'YES'
       }))
-    } catch (error) {
-      results.studentsColumns = [`Error: ${error.message}`]
-    }
+    } catch (error) { const e = error as any; \n      results.database = Error: \n    }
 
     // Check materials table columns
     try {
@@ -82,9 +74,7 @@ export async function GET() {
         type: col.DATA_TYPE,
         nullable: col.IS_NULLABLE === 'YES'
       }))
-    } catch (error) {
-      results.materialsColumns = [`Error: ${error.message}`]
-    }
+    } catch (error) { const e = error as any; \n      results.database = Error: \n    }
 
     // Test the failing queries
     results.testResults = {}
@@ -111,9 +101,7 @@ export async function GET() {
         LIMIT 1
       `)
       results.testResults.adminCertsSerialNumber = 'SUCCESS'
-    } catch (error) {
-      results.testResults.adminCertsSerialNumber = `FAILED: ${error.message}`
-    }
+    } catch (error) { const e = error as any; \n      results.database = Error: \n    }
 
     // Test 2: Admin certificates with serial
     try {
@@ -137,9 +125,7 @@ export async function GET() {
         LIMIT 1
       `)
       results.testResults.adminCertsSerial = 'SUCCESS'
-    } catch (error) {
-      results.testResults.adminCertsSerial = `FAILED: ${error.message}`
-    }
+    } catch (error) { const e = error as any; \n      results.database = Error: \n    }
 
     // Test 3: Materials query
     try {
@@ -155,9 +141,7 @@ export async function GET() {
         LIMIT 1
       `)
       results.testResults.materialsQuery = 'SUCCESS'
-    } catch (error) {
-      results.testResults.materialsQuery = `FAILED: ${error.message}`
-    }
+    } catch (error) { const e = error as any; \n      results.database = Error: \n    }
 
     // Test 4: Stage progress with stage_id
     try {
@@ -172,9 +156,7 @@ export async function GET() {
         LIMIT 1
       `)
       results.testResults.stageProgressStageId = 'SUCCESS'
-    } catch (error) {
-      results.testResults.stageProgressStageId = `FAILED: ${error.message}`
-    }
+    } catch (error) { const e = error as any; \n      results.database = Error: \n    }
 
     // Test 5: Stage progress with current_stage_id
     try {
@@ -189,20 +171,13 @@ export async function GET() {
         LIMIT 1
       `)
       results.testResults.stageProgressCurrentStageId = 'SUCCESS'
-    } catch (error) {
-      results.testResults.stageProgressCurrentStageId = `FAILED: ${error.message}`
-    }
+    } catch (error) { const e = error as any; \n      results.database = Error: \n    }
 
     return NextResponse.json(results, { status: 200 })
 
-  } catch (error) {
-    return NextResponse.json(
-      { 
-        error: 'Schema debug failed', 
-        message: error.message,
-        timestamp: new Date().toISOString()
-      },
+  } catch (error) { const e = error as any; \n      results.database = Error: \n    },
       { status: 500 }
     )
   }
 }
+
