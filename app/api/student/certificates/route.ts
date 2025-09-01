@@ -39,10 +39,10 @@ export async function GET() {
           c.issued_at,
           'teacher@test.com' as teacher_email
         FROM certificates c
-        WHERE c.user_id = ?
+        WHERE c.student_id = ?
         ORDER BY c.issued_at DESC
         LIMIT 10
-      `, [user.id]);
+      `, [studentId]);
       
       certificates = result;
     } catch (error) {

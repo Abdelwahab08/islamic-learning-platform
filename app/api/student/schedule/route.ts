@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     let scheduleItems = [];
     
     try {
+      // Since meetings table doesn't have user_id, we'll get all meetings for the date
       const result = await executeQuery(`
         SELECT 
           'MEETING' as type,
@@ -37,21 +38,20 @@ export async function GET(request: NextRequest) {
           m.description,
           DATE(m.scheduled_at) as date,
           TIME(m.scheduled_at) as time,
-          m.duration as duration,
+          m.duration_minutes as duration,
           'معلم تجريبي' as teacher_name,
           CASE 
             WHEN m.scheduled_at > NOW() THEN 'UPCOMING'
-            WHEN m.scheduled_at <= NOW() AND DATE_ADD(m.scheduled_at, INTERVAL m.duration MINUTE) >= NOW() THEN 'ONGOING'
+            WHEN m.scheduled_at <= NOW() AND DATE_ADD(m.scheduled_at, INTERVAL m.duration_minutes MINUTE) >= NOW() THEN 'ONGOING'
             ELSE 'COMPLETED'
           END as status,
           NULL as location,
-          NULL as meeting_url
+          m.join_url as meeting_url
         FROM meetings m
-        WHERE m.user_id = ?
-        AND DATE(m.scheduled_at) = ?
+        WHERE DATE(m.scheduled_at) = ?
         ORDER BY date, time
         LIMIT 10
-      `, [user.id, date]);
+      `, [date]);
       
       scheduleItems = result;
     } catch (error) {

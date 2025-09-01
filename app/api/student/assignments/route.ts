@@ -42,10 +42,10 @@ export async function GET() {
           NULL AS submission_id
         FROM assignments a
         JOIN assignment_targets at ON at.assignment_id = a.id
-        WHERE at.user_id = ?
+        WHERE at.student_id = ?
         ORDER BY COALESCE(a.due_at, a.due_date) ASC
         LIMIT 10
-      `, [user.id]);
+      `, [studentId]);
       
       assignments = result;
     } catch (error) {

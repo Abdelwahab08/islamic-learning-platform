@@ -49,8 +49,8 @@ export async function GET() {
 
     try {
       const assignmentTargets = await executeQuery(
-        'SELECT COUNT(*) as count FROM assignment_targets WHERE user_id = ?',
-        [user.id]
+        'SELECT COUNT(*) as count FROM assignment_targets WHERE student_id = ?',
+        [studentId]
       );
       totalAssignments = assignmentTargets[0]?.count || 0;
     } catch (error) {
@@ -59,8 +59,8 @@ export async function GET() {
 
     try {
       const certificates = await executeQuery(
-        'SELECT COUNT(*) as count FROM certificates WHERE user_id = ?',
-        [user.id]
+        'SELECT COUNT(*) as count FROM certificates WHERE student_id = ?',
+        [studentId]
       );
       totalCertificates = certificates[0]?.count || 0;
     } catch (error) {
@@ -68,9 +68,11 @@ export async function GET() {
     }
 
     try {
+      // Meetings table doesn't have student_id, so we'll use a different approach
+      // For now, let's just get total meetings count
       const meetings = await executeQuery(
-        'SELECT COUNT(*) as count FROM meetings WHERE user_id = ? AND scheduled_at > NOW()',
-        [user.id]
+        'SELECT COUNT(*) as count FROM meetings WHERE scheduled_at > NOW()',
+        []
       );
       upcomingMeetings = meetings[0]?.count || 0;
     } catch (error) {

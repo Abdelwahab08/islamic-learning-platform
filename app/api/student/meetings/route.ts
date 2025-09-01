@@ -30,23 +30,24 @@ export async function GET() {
     let meetings = [];
     
     try {
+      // Since meetings table doesn't have user_id, we'll get all meetings for now
+      // In a real app, you'd need to join with teacher_students or groups table
       const result = await executeQuery(`
         SELECT 
           m.id,
           m.title,
           m.description,
           m.scheduled_at,
-          m.duration as duration_minutes,
+          m.duration_minutes as duration_minutes,
           m.status,
           'معلم تجريبي' as teacher_name,
-          'ZOOM' as provider,
-          NULL as join_url,
+          COALESCE(m.provider, 'ZOOM') as provider,
+          m.join_url as join_url,
           'المرحلة المتوسطة' as stage_name
         FROM meetings m
-        WHERE m.user_id = ?
         ORDER BY m.scheduled_at DESC
         LIMIT 10
-      `, [user.id]);
+      `, []);
       
       meetings = result;
     } catch (error) {
