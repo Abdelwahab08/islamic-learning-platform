@@ -62,11 +62,11 @@ export async function GET(request: NextRequest) {
         NULL as meeting_url
       FROM meetings m
       LEFT JOIN users u ON m.teacher_id = u.id
-      WHERE m.student_id = ?
+      WHERE m.user_id = ?
       AND DATE(m.scheduled_at) = ?
       
       ORDER BY date, time
-    `, [studentId, date])
+    `, [user.id, date])
 
     return NextResponse.json(scheduleItems)
 

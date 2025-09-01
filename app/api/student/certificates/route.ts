@@ -39,9 +39,9 @@ export async function GET() {
         u.email as teacher_email
       FROM certificates c
       LEFT JOIN users u ON c.teacher_id = u.id
-      WHERE c.student_id = ?
+      WHERE c.user_id = ?
       ORDER BY c.issued_at DESC
-    `, [studentId])
+    `, [user.id])
 
     const transformedCertificates = certificates.map((cert: any, index: number) => ({
       id: cert.id,

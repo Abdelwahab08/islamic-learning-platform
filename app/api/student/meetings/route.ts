@@ -43,9 +43,9 @@ export async function GET() {
         'المرحلة المتوسطة' as stage_name
       FROM meetings m
       LEFT JOIN users u ON m.teacher_id = u.id
-      WHERE m.student_id = ?
+      WHERE m.user_id = ?
       ORDER BY m.scheduled_at DESC
-    `, [studentId])
+    `, [user.id])
 
     // Return the data directly as the frontend expects
     return NextResponse.json(meetings)

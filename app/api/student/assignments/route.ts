@@ -43,10 +43,10 @@ export async function GET() {
       JOIN assignment_targets at ON at.assignment_id = a.id
       LEFT JOIN teachers t ON a.teacher_id = t.id
       LEFT JOIN users uu ON (t.user_id = uu.id OR a.teacher_id = uu.id)
-      LEFT JOIN submissions s ON s.assignment_id = a.id AND s.student_id = at.student_id
-      WHERE at.student_id = ?
+      LEFT JOIN submissions s ON s.assignment_id = a.id AND s.user_id = at.user_id
+      WHERE at.user_id = ?
       ORDER BY COALESCE(a.due_at, a.due_date) ASC
-    `, [studentId])
+    `, [user.id])
 
     const transformedAssignments = assignments.map((assignment: any) => ({
       id: assignment.id,

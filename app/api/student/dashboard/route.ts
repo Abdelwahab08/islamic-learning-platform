@@ -33,19 +33,19 @@ export async function GET() {
       SELECT 
         (SELECT COUNT(*) FROM assignments a 
          JOIN assignment_targets at ON at.assignment_id = a.id 
-         WHERE at.student_id = ?) as totalAssignments,
+         WHERE at.user_id = ?) as totalAssignments,
         
         (SELECT COUNT(*) FROM assignments a 
          JOIN assignment_targets at ON at.assignment_id = a.id 
-         LEFT JOIN submissions s ON s.assignment_id = a.id AND s.student_id = at.student_id
-         WHERE at.student_id = ? AND s.id IS NULL) as pendingAssignments,
+         LEFT JOIN submissions s ON s.assignment_id = a.id AND s.user_id = at.user_id
+         WHERE at.user_id = ? AND s.id IS NULL) as pendingAssignments,
         
-        (SELECT COUNT(*) FROM certificates WHERE student_id = ?) as totalCertificates,
+        (SELECT COUNT(*) FROM certificates WHERE user_id = ?) as totalCertificates,
         
-        (SELECT COUNT(*) FROM meetings WHERE student_id = ? AND scheduled_at > NOW()) as upcomingMeetings,
+        (SELECT COUNT(*) FROM meetings WHERE user_id = ? AND scheduled_at > NOW()) as upcomingMeetings,
         
         (SELECT COUNT(*) FROM materials) as totalMaterials
-    `, [studentId, studentId, studentId, studentId])
+    `, [user.id, user.id, user.id, user.id])
 
     // Get recent activities
     const recentActivities = await executeQuery(`
@@ -56,7 +56,7 @@ export async function GET() {
         'تم إضافة واجب جديد' as description
       FROM assignments a
       JOIN assignment_targets at ON at.assignment_id = a.id
-      WHERE at.student_id = ?
+      WHERE at.user_id = ?
       
       UNION ALL
       
@@ -66,7 +66,7 @@ export async function GET() {
         m.scheduled_at as date,
         'تم جدولة اجتماع جديد' as description
       FROM meetings m
-      WHERE m.student_id = ?
+      WHERE m.user_id = ?
       
       UNION ALL
       
@@ -76,11 +76,11 @@ export async function GET() {
         c.issued_at as date,
         'تم إصدار شهادة جديدة' as description
       FROM certificates c
-      WHERE c.student_id = ?
+      WHERE c.user_id = ?
       
       ORDER BY date DESC
       LIMIT 5
-    `, [studentId, studentId, studentId])
+    `, [user.id, user.id, user.id])
 
     // Get current stage info
     const stageInfo = await executeQuery(`
@@ -90,8 +90,8 @@ export async function GET() {
         st.total_pages as totalPages
       FROM students st
       LEFT JOIN stages s ON st.current_stage_id = s.id
-      WHERE st.id = ?
-    `, [studentId])
+      WHERE st.user_id = ?
+    `, [user.id])
 
     const dashboardData = {
       stats: {
