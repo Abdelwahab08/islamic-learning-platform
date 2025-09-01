@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
       certificates = await executeQuery(`
         SELECT 
           c.id,
-          CAST(c.serial AS CHAR) AS serial,
+          CAST(COALESCE(c.serial, c.serial_number) AS CHAR) AS serial,
           su.email AS student_name,
           tu.email AS teacher_name,
           st.name_ar AS stage_name,
