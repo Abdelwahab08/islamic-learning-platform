@@ -44,8 +44,8 @@ export async function GET() {
       `);
       
       materials = result;
-    } catch (error) {
-      console.log('Error getting materials:', error.message);
+    } catch (error: any) {
+      console.log('Error getting materials:', error?.message || error);
       // Return empty array if query fails
       materials = [];
     }
