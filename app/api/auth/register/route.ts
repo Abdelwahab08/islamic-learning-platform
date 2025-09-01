@@ -37,23 +37,39 @@ export async function POST(request: NextRequest) {
     // Hash password
     const passwordHash = await hashPassword(password)
 
-    // Create user
+    // Get default stage ID (RASHIDI - المرحلة الابتدائية)
+    const defaultStage = await executeQuerySingle(
+      'SELECT id FROM stages WHERE code = ?',
+      ['RASHIDI']
+    )
+
+    if (!defaultStage) {
+      return NextResponse.json(
+        { message: 'خطأ في إعداد المرحلة الافتراضية' },
+        { status: 500 }
+      )
+    }
+
+    // Create user with pending approval
     const userId = uuidv4()
     await executeUpdate(
       'INSERT INTO users (id, role, email, password_hash, is_approved, onboarding_status) VALUES (?, ?, ?, ?, ?, ?)',
-      [userId, role, email, passwordHash, 0, 'PENDING_REVIEW']
+      [userId, role, email, passwordHash, 0, 'PENDING']
     )
 
-    // Create student record
+    // Create student record with default stage and page
     const studentId = uuidv4()
     await executeUpdate(
-      'INSERT INTO students (id, user_id) VALUES (?, ?)',
-      [studentId, userId]
+      'INSERT INTO students (id, user_id, stage_id, current_page) VALUES (?, ?, ?, ?)',
+      [studentId, userId, defaultStage.id, 1]
     )
 
     return NextResponse.json({
-      message: 'تم التسجيل بنجاح',
+      message: 'تم التسجيل بنجاح! سيتم مراجعة طلبك قريباً',
       userId: userId,
+      stage: 'RASHIDI',
+      stageName: 'إتقان لغتي (الرشيدي)',
+      currentPage: 1
     })
 
   } catch (error) {
