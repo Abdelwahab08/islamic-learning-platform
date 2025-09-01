@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth-server'
-import { executeQuerySingle, executeQuery } from '@/lib/db'
+import { executeQuerySingle, executeQuery } from '@/config/database'
 
 export async function GET() {
   try {

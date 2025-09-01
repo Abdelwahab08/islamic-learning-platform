@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth-server'
-import { executeQuery } from '@/lib/db'
+import { executeQuery } from '@/config/database'
 import puppeteer from 'puppeteer'
 
 export async function GET(request: NextRequest) {
