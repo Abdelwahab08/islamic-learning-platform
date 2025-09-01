@@ -29,50 +29,65 @@ export async function GET(request: NextRequest) {
     try {
       const teachers = await executeQuery('SELECT id FROM teachers WHERE user_id = ?', [teacherId])
       if (teachers.length === 0) {
+        console.log('No teacher record found for user:', teacherId)
         return NextResponse.json([])
       }
       teacherRecordId = teachers[0].id
+      console.log('Found teacher record:', teacherRecordId)
     } catch (error) {
       console.log('Error getting teacher record:', error)
       return NextResponse.json([])
     }
 
-    // Get weekly progress data for students
+    // Get weekly progress data for students - simplified query
     let weeklyProgress: StudentProgress[] = []
     try {
+      // First, check if teacher has any students
+      const hasStudents = await executeQuery(`
+        SELECT COUNT(*) as count FROM teacher_students WHERE teacher_id = ?
+      `, [teacherRecordId])
+      
+      if (hasStudents[0]?.count === 0) {
+        console.log('No students assigned to teacher')
+        return NextResponse.json([])
+      }
+
+      // Simplified query to avoid complex JOINs
       const progressResult = await executeQuery(`
         SELECT 
           s.id as student_id,
-          CONCAT(u.first_name, ' ', u.last_name) as student_name,
+          COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'طالب') as student_name,
           u.email as student_email,
-          st.name_ar as stage_name,
-          s.current_page,
-          st.total_pages,
-          ROUND((s.current_page / st.total_pages) * 100, 1) as progress_percentage,
-          COUNT(DISTINCT sub.id) as assignments_completed,
-          COUNT(DISTINCT c.id) as certificates_earned
-        FROM students s
+          COALESCE(st.name_ar, 'غير محدد') as stage_name,
+          COALESCE(s.current_page, 1) as current_page,
+          COALESCE(st.total_pages, 1) as total_pages
+        FROM teacher_students ts
+        JOIN students s ON ts.student_id = s.id
         JOIN users u ON s.user_id = u.id
         LEFT JOIN stages st ON s.stage_id = st.id
-        LEFT JOIN teacher_students ts ON s.id = ts.student_id
-        LEFT JOIN submissions sub ON s.id = sub.student_id
-        LEFT JOIN certificates c ON s.id = c.student_id AND c.status = 'APPROVED'
         WHERE ts.teacher_id = ?
-        GROUP BY s.id, u.first_name, u.last_name, u.email, st.name_ar, s.current_page, st.total_pages
-        ORDER BY progress_percentage DESC
+        ORDER BY u.first_name, u.last_name
       `, [teacherRecordId])
       
-      weeklyProgress = progressResult.map((student: any) => ({
-        studentId: student.student_id,
-        studentName: student.student_name || 'طالب',
-        studentEmail: student.student_email,
-        stageName: student.stage_name || 'غير محدد',
-        currentPage: student.current_page || 1,
-        totalPages: student.total_pages || 1,
-        progressPercentage: student.progress_percentage || 0,
-        assignmentsCompleted: student.assignments_completed || 0,
-        certificatesEarned: student.certificates_earned || 0
-      }))
+      weeklyProgress = progressResult.map((student: any) => {
+        const currentPage = student.current_page || 1
+        const totalPages = student.total_pages || 1
+        const progressPercentage = totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0
+        
+        return {
+          studentId: student.student_id,
+          studentName: student.student_name || 'طالب',
+          studentEmail: student.student_email,
+          stageName: student.stage_name || 'غير محدد',
+          currentPage: currentPage,
+          totalPages: totalPages,
+          progressPercentage: progressPercentage,
+          assignmentsCompleted: 0, // Will implement later
+          certificatesEarned: 0    // Will implement later
+        }
+      })
+      
+      console.log(`Found ${weeklyProgress.length} students for teacher`)
     } catch (error) {
       console.log('Error getting weekly progress:', error)
       // Return empty array if query fails

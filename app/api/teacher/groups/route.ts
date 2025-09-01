@@ -19,15 +19,18 @@ export async function GET(request: NextRequest) {
     }
 
     const teacherId = user.id
+    console.log('Getting groups for teacher user ID:', teacherId)
 
     // Get teacher record
     let teacherRecordId = null
     try {
       const teachers = await executeQuery('SELECT id FROM teachers WHERE user_id = ?', [teacherId])
       if (teachers.length === 0) {
+        console.log('No teacher record found for user:', teacherId)
         return NextResponse.json([])
       }
       teacherRecordId = teachers[0].id
+      console.log('Found teacher record ID:', teacherRecordId)
     } catch (error) {
       console.log('Error getting teacher record:', error)
       return NextResponse.json([])
@@ -36,13 +39,15 @@ export async function GET(request: NextRequest) {
     // Get groups for this teacher
     let groups: Group[] = []
     try {
+      console.log('Querying groups for teacher ID:', teacherRecordId)
+      
       const groupsResult = await executeQuery(`
         SELECT 
           g.id,
           g.name,
           g.level_stage_id,
-          st.name_ar as stage_name,
-          COUNT(gm.student_id) as student_count
+          COALESCE(st.name_ar, 'عام') as stage_name,
+          COALESCE(COUNT(gm.student_id), 0) as student_count
         FROM \`groups\` g
         LEFT JOIN stages st ON g.level_stage_id = st.id
         LEFT JOIN \`group_members\` gm ON g.id = gm.group_id
@@ -51,6 +56,8 @@ export async function GET(request: NextRequest) {
         ORDER BY g.created_at DESC
       `, [teacherRecordId])
       
+      console.log(`Found ${groupsResult.length} groups in database`)
+      
       groups = groupsResult.map((group: any) => ({
         id: group.id,
         name: group.name,
@@ -58,12 +65,15 @@ export async function GET(request: NextRequest) {
         stageName: group.stage_name || 'عام',
         studentCount: group.student_count || 0
       }))
+      
+      console.log('Processed groups:', groups)
     } catch (error) {
       console.log('Error getting groups:', error)
       // Return empty array if query fails
       groups = []
     }
 
+    console.log(`Returning ${groups.length} groups`)
     return NextResponse.json(groups)
 
   } catch (error) {
@@ -81,6 +91,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { name, stageId } = await request.json()
+    console.log('Creating group with data:', { name, stageId })
 
     if (!name) {
       return NextResponse.json({ error: 'اسم المجموعة مطلوب' }, { status: 400 })
@@ -96,6 +107,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'لم يتم العثور على المدرس' }, { status: 404 })
       }
       teacherRecordId = teachers[0].id
+      console.log('Found teacher record ID for group creation:', teacherRecordId)
     } catch (error) {
       console.log('Error getting teacher record:', error)
       return NextResponse.json({ error: 'خطأ في قاعدة البيانات' }, { status: 500 })
@@ -104,10 +116,14 @@ export async function POST(request: NextRequest) {
     // Create new group
     try {
       const groupId = crypto.randomUUID()
+      console.log('Creating group with ID:', groupId)
+      
       await executeQuery(`
-        INSERT INTO \`groups\` (id, teacher_id, name, level_stage_id) 
-        VALUES (?, ?, ?, ?)
+        INSERT INTO \`groups\` (id, teacher_id, name, level_stage_id, created_at) 
+        VALUES (?, ?, ?, ?, NOW())
       `, [groupId, teacherRecordId, name, stageId || null])
+
+      console.log('Group created successfully')
 
       return NextResponse.json({ 
         message: 'تم إنشاء المجموعة بنجاح',

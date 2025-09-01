@@ -126,6 +126,8 @@ export async function PUT(
     const assignmentId = params.id
     const body = await request.json()
 
+    console.log('Rating submission with data:', body)
+
     // Verify teacher owns this assignment
     const ownershipQuery = `
       SELECT a.id FROM assignments a
@@ -186,7 +188,7 @@ export async function PUT(
       if (shouldLevelUp) {
         // Get current stage and move to next stage
         const currentStageQuery = `
-          SELECT s.stage_id, st.order_num
+          SELECT s.stage_id, st.order_index
           FROM students s
           JOIN stages st ON s.stage_id = st.id
           WHERE s.id = ?
@@ -194,12 +196,12 @@ export async function PUT(
         const currentStage = await executeQuery(currentStageQuery, [body.student_id])
         
         if (currentStage.length > 0) {
-          const currentOrder = currentStage[0].order_num
+          const currentOrder = currentStage[0].order_index
           
           // Get next stage
           const nextStageQuery = `
             SELECT id FROM stages 
-            WHERE order_num = ? 
+            WHERE order_index = ? 
             LIMIT 1
           `
           const nextStage = await executeQuery(nextStageQuery, [currentOrder + 1])
@@ -225,29 +227,7 @@ export async function PUT(
       }
     }
 
-    // Log the evaluation in student progress history
-    if (body.student_id && body.page_number && body.grade) {
-      // Get the actual teacher ID from the teachers table
-      const teacherQuery = `
-        SELECT t.id as teacher_id FROM teachers t
-        WHERE t.user_id = ?
-      `
-      const teacherResult = await executeQuery(teacherQuery, [teacherId])
-      if (teacherResult.length > 0) {
-        const actualTeacherId = teacherResult[0].teacher_id
-        const logQuery = `
-          INSERT INTO student_progress_log (id, student_id, page_number, evaluation_grade, teacher_id, assignment_id, logged_at)
-          VALUES (UUID(), ?, ?, ?, ?, ?, NOW())
-        `
-        await executeQuery(logQuery, [
-          body.student_id,
-          body.page_number,
-          body.grade,
-          actualTeacherId,
-          assignmentId
-        ])
-      }
-    }
+    console.log('Rating submission successful, next page:', nextPage)
 
     return NextResponse.json({ 
       message: 'تم تقييم التسليم بنجاح',
@@ -278,6 +258,8 @@ export async function POST(
     const teacherId = user.id
     const assignmentId = params.id
     const body = await request.json()
+
+    console.log('Quick page registration with data:', body)
 
     // Verify teacher owns this assignment
     const ownershipQuery = `
@@ -318,29 +300,7 @@ export async function POST(
       await executeQuery(updateStudentQuery, [nextPage, body.student_id])
     }
 
-    // Log the evaluation
-    if (body.student_id && body.current_page && body.evaluation_grade) {
-      // Get the actual teacher ID from the teachers table
-      const teacherQuery = `
-        SELECT t.id as teacher_id FROM teachers t
-        WHERE t.user_id = ?
-      `
-      const teacherResult = await executeQuery(teacherQuery, [teacherId])
-      if (teacherResult.length > 0) {
-        const actualTeacherId = teacherResult[0].teacher_id
-        const logQuery = `
-          INSERT INTO student_progress_log (id, student_id, page_number, evaluation_grade, teacher_id, assignment_id, logged_at)
-          VALUES (UUID(), ?, ?, ?, ?, ?, NOW())
-        `
-        await executeQuery(logQuery, [
-          body.student_id,
-          body.current_page,
-          body.evaluation_grade,
-          actualTeacherId,
-          assignmentId
-        ])
-      }
-    }
+    console.log('Quick page registration successful, next page:', nextPage)
 
     return NextResponse.json({ 
       message: 'تم تسجيل الصفحة بنجاح',
