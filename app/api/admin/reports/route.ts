@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       executeQuery('SELECT COUNT(*) as count FROM users'),
       executeQuery('SELECT COUNT(*) as count FROM teachers'),
       executeQuery('SELECT COUNT(*) as count FROM students'),
-      executeQuery('SELECT COUNT(*) as count FROM users WHERE role = ?', ['TEACHER']),
+      executeQuery('SELECT COUNT(*) as count FROM users WHERE is_approved = 0'),
       executeQuery('SELECT COUNT(*) as count FROM certificates'),
       executeQuery('SELECT COUNT(*) as count FROM certificates WHERE status = ?', ['PENDING']),
       executeQuery('SELECT COUNT(*) as count FROM assignments'),
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       executeQuery('SELECT COUNT(*) as count FROM materials'),
       executeQuery('SELECT COUNT(*) as count FROM meetings'),
       executeQuery('SELECT COUNT(*) as count FROM complaints'),
-      executeQuery('SELECT COUNT(*) as count FROM complaints')
+      executeQuery('SELECT COUNT(*) as count FROM complaints WHERE status = "resolved"')
     ])
 
     // Get monthly statistics
@@ -54,9 +54,9 @@ export async function GET(request: NextRequest) {
       SELECT 
         DATE_FORMAT(created_at, '%Y-%m') as month,
         COUNT(*) as newUsers,
-        (SELECT COUNT(*) FROM certificates WHERE DATE_FORMAT(issued_at, '%Y-%m') = DATE_FORMAT(u.created_at, '%Y-%m')) as newCertificates,
-        (SELECT COUNT(*) FROM assignments WHERE DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(u.created_at, '%Y-%m')) as newAssignments
-      FROM users u
+        (SELECT COUNT(*) FROM certificates WHERE DATE_FORMAT(issued_at, '%Y-%m') = DATE_FORMAT(users.created_at, '%Y-%m')) as newCertificates,
+        (SELECT COUNT(*) FROM assignments WHERE DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(users.created_at, '%Y-%m')) as newAssignments
+      FROM users
       WHERE created_at >= ?
       GROUP BY DATE_FORMAT(created_at, '%Y-%m')
       ORDER BY month DESC
@@ -66,14 +66,14 @@ export async function GET(request: NextRequest) {
     // Get top teachers
     const topTeachers = await executeQuery(`
       SELECT 
-        u.email as name,
+        CONCAT(u.first_name, ' ', u.last_name) as name,
         COUNT(DISTINCT ts.student_id) as students,
         COUNT(c.id) as certificates
       FROM teachers t
       JOIN users u ON t.user_id = u.id
       LEFT JOIN teacher_students ts ON t.id = ts.teacher_id
       LEFT JOIN certificates c ON t.id = c.teacher_id
-      GROUP BY t.id, u.email
+      GROUP BY t.id, u.first_name, u.last_name
       ORDER BY students DESC, certificates DESC
       LIMIT 5
     `)
@@ -81,12 +81,12 @@ export async function GET(request: NextRequest) {
     // Get stage progress
     const stageProgress = await executeQuery(`
       SELECT 
-        st.name_ar as stage,
+        CONCAT('المرحلة ', st.id) as stage,
         COUNT(s.id) as students,
         ROUND((COUNT(s.id) / (SELECT COUNT(*) FROM students)) * 100, 1) as completionRate
       FROM stages st
       LEFT JOIN students s ON st.id = COALESCE(s.stage_id, s.current_stage_id)
-      GROUP BY st.id, st.name_ar
+      GROUP BY st.id
       ORDER BY st.id
     `)
 

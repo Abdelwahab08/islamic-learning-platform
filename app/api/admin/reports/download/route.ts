@@ -87,12 +87,12 @@ export async function GET(request: NextRequest) {
            executeQuery('SELECT COUNT(*) as count FROM meetings'),
            executeQuery(`
              SELECT 
-               st.name_ar as stage,
+               CONCAT('المرحلة ', st.id) as stage,
                COUNT(s.id) as students,
                ROUND((COUNT(s.id) / (SELECT COUNT(*) FROM students)) * 100, 1) as completionRate
              FROM stages st
              LEFT JOIN students s ON st.id = COALESCE(s.stage_id, s.current_stage_id)
-             GROUP BY st.id, st.name_ar
+             GROUP BY st.id
              ORDER BY st.id
            `)
          ])
@@ -142,12 +142,12 @@ export async function GET(request: NextRequest) {
            executeQuery('SELECT COUNT(*) as count FROM meetings'),
            executeQuery(`
              SELECT 
-               st.name_ar as stage,
+               CONCAT('المرحلة ', st.id) as stage,
                COUNT(s.id) as students,
                ROUND((COUNT(s.id) / (SELECT COUNT(*) FROM students)) * 100, 1) as completionRate
              FROM stages st
              LEFT JOIN students s ON st.id = COALESCE(s.stage_id, s.current_stage_id)
-             GROUP BY st.id, st.name_ar
+             GROUP BY st.id
              ORDER BY st.id
            `)
          ])

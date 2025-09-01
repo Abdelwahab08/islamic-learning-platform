@@ -20,23 +20,25 @@ export async function GET(request: NextRequest) {
         u.is_approved,
         u.onboarding_status,
         u.created_at,
+        u.first_name,
+        u.last_name,
         CASE 
           WHEN u.role = 'STUDENT' THEN (
             SELECT JSON_OBJECT(
               'id', t.id,
-              'name', u2.email,
+              'name', CONCAT(u2.first_name, ' ', u2.last_name),
               'email', u2.email
             )
             FROM teacher_students ts
             JOIN teachers t ON ts.teacher_id = t.id
             JOIN users u2 ON t.user_id = u2.id
-            WHERE ts.student_id = s.id
+            JOIN students s ON ts.student_id = s.id
+            WHERE s.user_id = u.id
             LIMIT 1
           )
           ELSE NULL
         END as assigned_teacher
       FROM users u
-      LEFT JOIN students s ON u.id = s.user_id
       ORDER BY u.created_at DESC
     `)
 
@@ -50,8 +52,8 @@ export async function GET(request: NextRequest) {
       created_at: user.created_at,
       last_login: null, // Set to null since column doesn't exist
       profile: {
-        first_name: null,
-        last_name: null,
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
         phone: null
       },
       assignedTeacher: user.assigned_teacher ? JSON.parse(user.assigned_teacher) : null

@@ -159,8 +159,8 @@ export async function GET(request: NextRequest) {
       query = `
         SELECT 
           m.*,
-          u.email as teacher_name,
-          m.level as stage_name
+          CONCAT(u.first_name, ' ', u.last_name) as teacher_name,
+          COALESCE(m.stage_id, 'عام') as stage_name
         FROM materials m
         JOIN teachers t ON m.teacher_id = t.id
         JOIN users u ON t.user_id = u.id
@@ -171,8 +171,8 @@ export async function GET(request: NextRequest) {
       query = `
         SELECT 
           m.*,
-          u.email as teacher_name,
-          m.level as stage_name
+          CONCAT(u.first_name, ' ', u.last_name) as teacher_name,
+          COALESCE(m.stage_id, 'عام') as stage_name
         FROM materials m
         JOIN teachers t ON m.teacher_id = t.id
         JOIN users u ON t.user_id = u.id
@@ -180,12 +180,12 @@ export async function GET(request: NextRequest) {
       `;
       params.push(user.id);
     } else if (user.role === 'STUDENT') {
-      // Student can see materials (no stages join; return level as stage_name)
+      // Student can see materials
       query = `
         SELECT 
           m.*,
-          u.email as teacher_name,
-          m.level as stage_name
+          CONCAT(u.first_name, ' ', u.last_name) as teacher_name,
+          COALESCE(m.stage_id, 'عام') as stage_name
         FROM materials m
         JOIN teachers t ON m.teacher_id = t.id
         JOIN users u ON t.user_id = u.id
@@ -193,9 +193,9 @@ export async function GET(request: NextRequest) {
       `;
     }
 
-    // Optional filter if caller passes a level value via stageId param
+    // Optional filter if caller passes a stage value via stageId param
     if (stageId) {
-      query += ' AND m.level = ?';
+      query += ' AND m.stage_id = ?';
       params.push(stageId);
     }
 
