@@ -33,8 +33,8 @@ export async function GET() {
       const result = await executeQuery(`
         SELECT 
           c.id,
-          c.title,
-          c.description,
+          c.serial,
+          c.grade,
           c.status,
           c.issued_at,
           'teacher@test.com' as teacher_email
@@ -51,10 +51,10 @@ export async function GET() {
       certificates = [];
     }
 
-    const transformedCertificates = certificates.map((cert: any, index: number) => ({
+    const transformedCertificates = certificates.map((cert: any) => ({
       id: cert.id,
-      serialNumber: index + 1, // Generate serial number
-      grade: 'ممتاز', // Default grade
+      serialNumber: cert.serial,
+      grade: cert.grade,
       issueDate: cert.issued_at,
       status: cert.status,
       createdAt: cert.issued_at,

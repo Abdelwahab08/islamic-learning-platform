@@ -36,7 +36,6 @@ export async function GET() {
         SELECT 
           m.id,
           m.title,
-          m.description,
           m.scheduled_at,
           m.duration_minutes as duration_minutes,
           m.status,

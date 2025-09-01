@@ -35,7 +35,6 @@ export async function GET(request: NextRequest) {
           'MEETING' as type,
           m.id,
           m.title,
-          m.description,
           DATE(m.scheduled_at) as date,
           TIME(m.scheduled_at) as time,
           m.duration_minutes as duration,
