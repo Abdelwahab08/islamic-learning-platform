@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const title = formData.get('title') as string;
     const targetType = formData.get('targetType') as string;
-    const targetId = formData.get('targetId') as string;
+    const targetId = formData.get('targetId') as string; // expected to be a level string in current schema
     const files = formData.getAll('files') as File[];
 
     if (!title || !targetId || files.length === 0) {
@@ -98,17 +98,17 @@ export async function POST(request: NextRequest) {
       kind = 'VIDEO';
     }
 
-    // Create material record
+    // Create material record (use level instead of stage_id in current schema)
     const materialId = uuidv4();
     await executeUpdate(`
       INSERT INTO materials (
-        id, teacher_id, stage_id, title, file_url, kind, created_at
+        id, teacher_id, title, level, file_url, kind, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, NOW())
     `, [
       materialId,
       teacherId,
-      targetId,
       title,
+      targetId,
       JSON.stringify(uploadedFiles),
       kind,
     ]);
@@ -160,11 +160,10 @@ export async function GET(request: NextRequest) {
         SELECT 
           m.*,
           u.email as teacher_name,
-          st.name_ar as stage_name
+          m.level as stage_name
         FROM materials m
         JOIN teachers t ON m.teacher_id = t.id
         JOIN users u ON t.user_id = u.id
-        LEFT JOIN stages st ON m.stage_id = st.id
         WHERE 1=1
       `;
     } else if (user.role === 'TEACHER') {
@@ -173,33 +172,30 @@ export async function GET(request: NextRequest) {
         SELECT 
           m.*,
           u.email as teacher_name,
-          st.name_ar as stage_name
+          m.level as stage_name
         FROM materials m
         JOIN teachers t ON m.teacher_id = t.id
         JOIN users u ON t.user_id = u.id
-        LEFT JOIN stages st ON m.stage_id = st.id
         WHERE t.user_id = ?
       `;
       params.push(user.id);
     } else if (user.role === 'STUDENT') {
-      // Student can see materials for their stage (handle both stage_id and current_stage_id)
+      // Student can see materials (no stages join; return level as stage_name)
       query = `
         SELECT 
           m.*,
           u.email as teacher_name,
-          st.name_ar as stage_name
+          m.level as stage_name
         FROM materials m
         JOIN teachers t ON m.teacher_id = t.id
         JOIN users u ON t.user_id = u.id
-        LEFT JOIN stages st ON m.stage_id = st.id
-        JOIN students s ON s.user_id = ?
-        WHERE m.stage_id = COALESCE(s.stage_id, s.current_stage_id)
+        WHERE 1=1
       `;
-      params.push(user.id);
     }
 
+    // Optional filter if caller passes a level value via stageId param
     if (stageId) {
-      query += ' AND m.stage_id = ?';
+      query += ' AND m.level = ?';
       params.push(stageId);
     }
 
