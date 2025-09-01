@@ -2,6 +2,17 @@ import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth-server'
 import { executeQuery } from '@/config/database'
 
+// Helper function to get stage name based on order index
+function getStageName(orderIndex: number): string {
+  const stages = [
+    'المرحلة الابتدائية',
+    'المرحلة المتوسطة', 
+    'المرحلة الثانوية',
+    'المرحلة الجامعية'
+  ];
+  return stages[orderIndex - 1] || 'المرحلة الابتدائية';
+}
+
 export async function GET() {
   try {
     const user = await getCurrentUser()
@@ -108,17 +119,21 @@ export async function GET() {
       recentActivities = [];
     }
 
-    // Get current stage info - simplified
+    // Get real stage and progress info
     let stageInfo = [];
     
     try {
       const stage = await executeQuery(`
         SELECT 
-          'المرحلة الابتدائية' as stageName,
-          1 as currentPage,
-          10 as totalPages
+          s.stage_id,
+          s.current_page,
+          st.total_pages,
+          st.order_index
+        FROM students s
+        LEFT JOIN stages st ON s.stage_id = st.id
+        WHERE s.user_id = ?
         LIMIT 1
-      `);
+      `, [user.id]);
       stageInfo = stage;
     } catch (error: any) {
       console.log('Error getting stage info:', error?.message || error);
@@ -140,9 +155,9 @@ export async function GET() {
       },
       recentActivities: recentActivities || [],
       currentStage: {
-        name: stageInfo[0]?.stageName || 'المرحلة الابتدائية',
-        currentPage: stageInfo[0]?.currentPage || 1,
-        totalPages: stageInfo[0]?.totalPages || 10
+        name: getStageName(stageInfo[0]?.order_index || 1),
+        currentPage: stageInfo[0]?.current_page || 1,
+        totalPages: stageInfo[0]?.total_pages || 10
       }
     }
 

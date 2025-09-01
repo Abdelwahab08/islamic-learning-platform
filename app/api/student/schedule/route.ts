@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     let scheduleItems = [];
     
     try {
-      // Since meetings table doesn't have user_id, we'll get all meetings for the date
+      // Get all upcoming meetings instead of date-specific
       const result = await executeQuery(`
         SELECT 
           'MEETING' as type,
@@ -47,10 +47,10 @@ export async function GET(request: NextRequest) {
           NULL as location,
           m.join_url as meeting_url
         FROM meetings m
-        WHERE DATE(m.scheduled_at) = ?
-        ORDER BY date, time
+        WHERE m.scheduled_at > NOW()
+        ORDER BY m.scheduled_at ASC
         LIMIT 10
-      `, [date]);
+      `, []);
       
       scheduleItems = result;
     } catch (error: any) {

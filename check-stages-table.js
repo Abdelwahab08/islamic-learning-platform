@@ -1,42 +1,68 @@
 const mysql = require('mysql2/promise');
 
 async function checkStagesTable() {
-  const connection = await mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'islamic_db'
-  });
+  console.log('🔍 Checking Stages Table Structure...\n');
+  
+  const connectionConfig = {
+    host: 'metro.proxy.rlwy.net',
+    port: 16665,
+    user: 'root',
+    password: 'IxIZLRYNpqztjoTYQijUTsGbyIXRZXOf',
+    database: 'railway'
+  };
 
+  let connection;
+  
   try {
-    console.log('🔍 Checking stages table structure...');
+    connection = await mysql.createConnection(connectionConfig);
+    console.log('✅ Database connected!');
     
-    // Check if table exists
-    const [tables] = await connection.execute('SHOW TABLES LIKE "stages"');
-    if (tables.length === 0) {
-      console.log('❌ Stages table does not exist');
-      return;
-    }
-    
-    // Get table structure
+    // Check table structure
     const [columns] = await connection.execute('DESCRIBE stages');
-    console.log('📋 Stages table columns:');
+    console.log('📚 Stages Table Columns:');
     columns.forEach(col => {
-      console.log(`  - ${col.Field}: ${col.Type} ${col.Null === 'YES' ? 'NULL' : 'NOT NULL'}`);
+      console.log(`   - ${col.Field} (${col.Type}) ${col.Null === 'NO' ? 'NOT NULL' : 'NULL'}`);
     });
     
-    // Check existing data
-    const [rows] = await connection.execute('SELECT * FROM stages LIMIT 5');
-    console.log(`📊 Found ${rows.length} existing records in stages table`);
-    if (rows.length > 0) {
-      console.log('Sample data:', rows[0]);
+    // Check sample data
+    const [sampleData] = await connection.execute('SELECT * FROM stages LIMIT 5');
+    console.log('\n📊 Sample Stages Data:');
+    sampleData.forEach(row => {
+      console.log(`   - ID: ${row.id}, Name: ${row.name}, Total Pages: ${row.total_pages}`);
+    });
+    
+    // Check student's current stage
+    const [studentStage] = await connection.execute(`
+      SELECT 
+        s.stage_id,
+        s.current_page,
+        st.name as stageName,
+        st.total_pages
+      FROM students s
+      LEFT JOIN stages st ON s.stage_id = st.id
+      WHERE s.user_id = 'test-student-1756745498583'
+      LIMIT 1
+    `);
+    
+    console.log('\n🎓 Student Stage Info:');
+    if (studentStage.length > 0) {
+      const stage = studentStage[0];
+      console.log(`   Stage ID: ${stage.stage_id}`);
+      console.log(`   Current Page: ${stage.current_page}`);
+      console.log(`   Stage Name: ${stage.stageName}`);
+      console.log(`   Total Pages: ${stage.total_pages}`);
+    } else {
+      console.log('   ❌ No stage info found for student');
     }
     
   } catch (error) {
-    console.error('❌ Error checking stages table:', error.message);
+    console.error('❌ Error:', error.message);
   } finally {
-    await connection.end();
+    if (connection) {
+      await connection.end();
+      console.log('\n🔌 Database disconnected');
+    }
   }
 }
 
-checkStagesTable();
+checkStagesTable().catch(console.error);
