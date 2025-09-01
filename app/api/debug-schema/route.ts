@@ -3,7 +3,7 @@ import { executeQuery, executeQuerySingle } from '@/lib/db'
 
 export async function GET() {
   try {
-    const results = {
+    const results: any = {
       timestamp: new Date().toISOString(),
       database: '',
       tables: [],
@@ -17,7 +17,9 @@ export async function GET() {
     try {
       const dbResult = await executeQuerySingle('SELECT DATABASE() as db_name')
       results.database = dbResult?.db_name || 'unknown'
-    } catch (error) { const e = error as any; \n      results.database = Error: \n    }
+    } catch (error: any) {
+      results.database = `Error: ${String(error?.message || error)}`
+    }
 
     // Get all tables
     try {
@@ -27,8 +29,10 @@ export async function GET() {
         WHERE TABLE_SCHEMA = DATABASE() 
         ORDER BY TABLE_NAME
       `)
-      results.tables = tables.map(t => ({ name: t.TABLE_NAME, rows: t.TABLE_ROWS || 0 }))
-    } catch (error) { const e = error as any; \n      results.database = Error: \n    }
+      results.tables = tables.map((t: any) => ({ name: t.TABLE_NAME, rows: t.TABLE_ROWS || 0 }))
+    } catch (error: any) {
+      results.tables = [`Error: ${String(error?.message || error)}`]
+    }
 
     // Check certificates table columns
     try {
@@ -38,13 +42,15 @@ export async function GET() {
         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'certificates'
         ORDER BY ORDINAL_POSITION
       `)
-      results.certificatesColumns = certCols.map(col => ({
+      results.certificatesColumns = certCols.map((col: any) => ({
         name: col.COLUMN_NAME,
         type: col.DATA_TYPE,
         nullable: col.IS_NULLABLE === 'YES',
         default: col.COLUMN_DEFAULT
       }))
-    } catch (error) { const e = error as any; \n      results.database = Error: \n    }
+    } catch (error: any) {
+      results.certificatesColumns = [`Error: ${String(error?.message || error)}`]
+    }
 
     // Check students table columns
     try {
@@ -54,12 +60,14 @@ export async function GET() {
         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'students'
         ORDER BY ORDINAL_POSITION
       `)
-      results.studentsColumns = studentCols.map(col => ({
+      results.studentsColumns = studentCols.map((col: any) => ({
         name: col.COLUMN_NAME,
         type: col.DATA_TYPE,
         nullable: col.IS_NULLABLE === 'YES'
       }))
-    } catch (error) { const e = error as any; \n      results.database = Error: \n    }
+    } catch (error: any) {
+      results.studentsColumns = [`Error: ${String(error?.message || error)}`]
+    }
 
     // Check materials table columns
     try {
@@ -69,12 +77,14 @@ export async function GET() {
         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'materials'
         ORDER BY ORDINAL_POSITION
       `)
-      results.materialsColumns = materialCols.map(col => ({
+      results.materialsColumns = materialCols.map((col: any) => ({
         name: col.COLUMN_NAME,
         type: col.DATA_TYPE,
         nullable: col.IS_NULLABLE === 'YES'
       }))
-    } catch (error) { const e = error as any; \n      results.database = Error: \n    }
+    } catch (error: any) {
+      results.materialsColumns = [`Error: ${String(error?.message || error)}`]
+    }
 
     // Test the failing queries
     results.testResults = {}
@@ -101,7 +111,9 @@ export async function GET() {
         LIMIT 1
       `)
       results.testResults.adminCertsSerialNumber = 'SUCCESS'
-    } catch (error) { const e = error as any; \n      results.database = Error: \n    }
+    } catch (error: any) {
+      results.testResults.adminCertsSerialNumber = `FAILED: ${String(error?.message || error)}`
+    }
 
     // Test 2: Admin certificates with serial
     try {
@@ -125,7 +137,9 @@ export async function GET() {
         LIMIT 1
       `)
       results.testResults.adminCertsSerial = 'SUCCESS'
-    } catch (error) { const e = error as any; \n      results.database = Error: \n    }
+    } catch (error: any) {
+      results.testResults.adminCertsSerial = `FAILED: ${String(error?.message || error)}`
+    }
 
     // Test 3: Materials query
     try {
@@ -133,15 +147,16 @@ export async function GET() {
         SELECT 
           m.*,
           u.email as teacher_name,
-          st.name_ar as stage_name
+          m.level as stage_name
         FROM materials m
         JOIN teachers t ON m.teacher_id = t.id
         JOIN users u ON t.user_id = u.id
-        LEFT JOIN stages st ON m.stage_id = st.id
         LIMIT 1
       `)
       results.testResults.materialsQuery = 'SUCCESS'
-    } catch (error) { const e = error as any; \n      results.database = Error: \n    }
+    } catch (error: any) {
+      results.testResults.materialsQuery = `FAILED: ${String(error?.message || error)}`
+    }
 
     // Test 4: Stage progress with stage_id
     try {
@@ -156,7 +171,9 @@ export async function GET() {
         LIMIT 1
       `)
       results.testResults.stageProgressStageId = 'SUCCESS'
-    } catch (error) { const e = error as any; \n      results.database = Error: \n    }
+    } catch (error: any) {
+      results.testResults.stageProgressStageId = `FAILED: ${String(error?.message || error)}`
+    }
 
     // Test 5: Stage progress with current_stage_id
     try {
@@ -171,11 +188,15 @@ export async function GET() {
         LIMIT 1
       `)
       results.testResults.stageProgressCurrentStageId = 'SUCCESS'
-    } catch (error) { const e = error as any; \n      results.database = Error: \n    }
+    } catch (error: any) {
+      results.testResults.stageProgressCurrentStageId = `FAILED: ${String(error?.message || error)}`
+    }
 
     return NextResponse.json(results, { status: 200 })
 
-  } catch (error) { const e = error as any; \n      results.database = Error: \n    },
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: 'Schema debug failed', message: String(error?.message || error), timestamp: new Date().toISOString() },
       { status: 500 }
     )
   }
