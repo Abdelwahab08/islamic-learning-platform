@@ -2,6 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth-server'
 import { executeQuery } from '@/lib/db'
 
+interface Student {
+  id: string
+  name: string
+  email: string
+  phone: string
+  join_date: string
+  current_stage: string
+  progress_percentage: number
+  total_assignments: number
+  completed_assignments: number
+  certificates_count: number
+  last_activity: string
+  status: 'active' | 'inactive' | 'suspended'
+  group_name?: string
+  teacher_notes?: string
+}
+
 export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser()
@@ -29,7 +46,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get students assigned to this teacher
-    let students = []
+    let students: Student[] = []
     try {
       console.log('Querying students for teacher ID:', teacherRecordId)
       
