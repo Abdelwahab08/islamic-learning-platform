@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       executeQuery('SELECT COUNT(*) as count FROM users'),
       executeQuery('SELECT COUNT(*) as count FROM teachers'),
       executeQuery('SELECT COUNT(*) as count FROM students'),
-      executeQuery('SELECT COUNT(*) as count FROM users WHERE role = ?', ['TEACHER']), // Count teachers as pending for approval
+      executeQuery('SELECT COUNT(*) as count FROM users WHERE role = ?', ['TEACHER']),
       executeQuery('SELECT COUNT(*) as count FROM certificates'),
       executeQuery('SELECT COUNT(*) as count FROM certificates WHERE status = ?', ['PENDING']),
       executeQuery('SELECT COUNT(*) as count FROM assignments'),
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
         COUNT(s.id) as students,
         ROUND((COUNT(s.id) / (SELECT COUNT(*) FROM students)) * 100, 1) as completionRate
       FROM stages st
-      LEFT JOIN students s ON st.id = s.current_stage_id
+      LEFT JOIN students s ON st.id = s.stage_id
       GROUP BY st.id, st.name_ar
       ORDER BY st.id
     `)

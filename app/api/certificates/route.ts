@@ -68,18 +68,17 @@ export async function GET(request: NextRequest) {
         ORDER BY c.issued_at DESC
       `, [teacher[0].id])
     } else if (user.role === 'ADMIN') {
-      // Get all certificates for admin
+      // Get all certificates for admin (shape expected by admin UI)
       certificates = await executeQuery(`
         SELECT 
           c.id,
-          CONCAT('شهادة رقم ', c.serial) as title,
-          CONCAT('شهادة إتمام المرحلة - ', st.name_ar) as description,
+          CAST(c.serial AS CHAR) AS serial,
+          su.email AS student_name,
+          tu.email AS teacher_name,
+          st.name_ar AS stage_name,
+          c.grade,
           c.status,
-          c.issued_at as created_at,
-          c.approved_at,
-          su.email as student_name,
-          tu.email as teacher_name,
-          c.pdf_url as file_path
+          c.issued_at
         FROM certificates c
         JOIN students s ON c.student_id = s.id
         JOIN users su ON s.user_id = su.id

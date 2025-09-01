@@ -41,9 +41,9 @@ export async function GET() {
       FROM certificates
     `)
 
-    // Get active toasts count
+    // Get unread notifications count (fallback instead of admin_toasts)
     const activeToasts = await executeQuerySingle(
-      'SELECT COUNT(*) as count FROM admin_toasts WHERE active = 1'
+      'SELECT COUNT(*) as count FROM notifications WHERE read_flag = 0'
     )
 
     // Get complaints count
