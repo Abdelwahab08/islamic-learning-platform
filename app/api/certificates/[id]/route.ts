@@ -17,11 +17,18 @@ export async function GET(
 
     const certificateId = params.id
 
+    // Detect serial column
+    const serialCheck = await executeQuerySingle(`
+      SELECT COUNT(*) as cnt FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'certificates' AND COLUMN_NAME = 'serial'
+    `)
+    const serialColumn = (serialCheck?.cnt ?? 0) > 0 ? 'serial' : 'serial_number'
+
     // Get detailed certificate information
     const certificate = await executeQuerySingle(`
       SELECT 
         c.id,
-        c.serial,
+        c.${serialColumn} AS serial,
         c.grade,
         c.issued_at,
         c.approved_at,

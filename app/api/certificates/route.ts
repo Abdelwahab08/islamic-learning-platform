@@ -10,6 +10,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'غير مصرح' }, { status: 401 })
     }
 
+    // Detect which serial column exists in current DB schema
+    const serialCheck = await executeQuery(
+      `SELECT COUNT(*) as cnt FROM INFORMATION_SCHEMA.COLUMNS 
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'certificates' AND COLUMN_NAME = 'serial'`
+    )
+    const serialColumn = (serialCheck[0]?.cnt ?? 0) > 0 ? 'serial' : 'serial_number'
+
     let certificates
     if (user.role === 'STUDENT') {
       // Get student certificates
@@ -25,7 +32,7 @@ export async function GET(request: NextRequest) {
       certificates = await executeQuery(`
         SELECT 
           c.id,
-          CONCAT('شهادة رقم ', c.serial) as title,
+          CONCAT('شهادة رقم ', c.${serialColumn}) as title,
           CONCAT('شهادة إتمام المرحلة - ', st.name_ar) as description,
           c.status,
           c.issued_at as created_at,
@@ -53,7 +60,7 @@ export async function GET(request: NextRequest) {
       certificates = await executeQuery(`
         SELECT 
           c.id,
-          CONCAT('شهادة رقم ', c.serial) as title,
+          CONCAT('شهادة رقم ', c.${serialColumn}) as title,
           CONCAT('شهادة إتمام المرحلة - ', st.name_ar) as description,
           c.status,
           c.issued_at as created_at,
@@ -72,7 +79,7 @@ export async function GET(request: NextRequest) {
       certificates = await executeQuery(`
         SELECT 
           c.id,
-          CAST(COALESCE(c.serial, c.serial_number) AS CHAR) AS serial,
+          CAST(c.${serialColumn} AS CHAR) AS serial,
           su.email AS student_name,
           tu.email AS teacher_name,
           st.name_ar AS stage_name,
@@ -124,14 +131,21 @@ export async function POST(request: NextRequest) {
 
     const certificateId = uuidv4()
 
-    // Get next serial number
+    // Detect which serial column exists
+    const serialCheck = await executeQuery(
+      `SELECT COUNT(*) as cnt FROM INFORMATION_SCHEMA.COLUMNS 
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'certificates' AND COLUMN_NAME = 'serial'`
+    )
+    const serialColumn = (serialCheck[0]?.cnt ?? 0) > 0 ? 'serial' : 'serial_number'
+
+    // Get next serial number from the correct column
     const serialResult = await executeQuery(
-      'SELECT COALESCE(MAX(serial), 0) + 1 as next_serial FROM certificates'
+      `SELECT COALESCE(MAX(${serialColumn}), 0) + 1 as next_serial FROM certificates`
     )
     const serial = serialResult[0].next_serial
 
     await executeUpdate(`
-      INSERT INTO certificates (id, serial, student_id, teacher_id, stage_id, grade, issued_at, status)
+      INSERT INTO certificates (id, ${serialColumn}, student_id, teacher_id, stage_id, grade, issued_at, status)
       VALUES (?, ?, ?, ?, ?, ?, NOW(), 'PENDING')
     `, [certificateId, serial, student_id, teacher[0].id, stage_id, grade])
 
