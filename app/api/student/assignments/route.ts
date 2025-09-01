@@ -48,8 +48,8 @@ export async function GET() {
       `, [studentId]);
       
       assignments = result;
-    } catch (error) {
-      console.log('Error getting assignments:', error.message);
+    } catch (error: any) {
+      console.log('Error getting assignments:', error?.message || error);
       // Return empty array if query fails
       assignments = [];
     }

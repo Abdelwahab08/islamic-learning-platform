@@ -50,8 +50,8 @@ export async function GET() {
       `, []);
       
       meetings = result;
-    } catch (error) {
-      console.log('Error getting meetings:', error.message);
+    } catch (error: any) {
+      console.log('Error getting meetings:', error?.message || error);
       // Return empty array if query fails
       meetings = [];
     }

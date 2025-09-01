@@ -53,8 +53,8 @@ export async function GET() {
         [studentId]
       );
       totalAssignments = assignmentTargets[0]?.count || 0;
-    } catch (error) {
-      console.log('Error getting assignments:', error.message);
+    } catch (error: any) {
+      console.log('Error getting assignments:', error?.message || error);
     }
 
     try {
@@ -63,8 +63,8 @@ export async function GET() {
         [studentId]
       );
       totalCertificates = certificates[0]?.count || 0;
-    } catch (error) {
-      console.log('Error getting certificates:', error.message);
+    } catch (error: any) {
+      console.log('Error getting certificates:', error?.message || error);
     }
 
     try {
@@ -75,8 +75,8 @@ export async function GET() {
         []
       );
       upcomingMeetings = meetings[0]?.count || 0;
-    } catch (error) {
-      console.log('Error getting meetings:', error.message);
+    } catch (error: any) {
+      console.log('Error getting meetings:', error?.message || error);
     }
 
     try {
@@ -102,8 +102,8 @@ export async function GET() {
         LIMIT 2
       `);
       recentActivities = activities;
-    } catch (error) {
-      console.log('Error getting recent activities:', error.message);
+    } catch (error: any) {
+      console.log('Error getting recent activities:', error?.message || error);
       // Return empty array if query fails
       recentActivities = [];
     }
@@ -120,8 +120,8 @@ export async function GET() {
         LIMIT 1
       `);
       stageInfo = stage;
-    } catch (error) {
-      console.log('Error getting stage info:', error.message);
+    } catch (error: any) {
+      console.log('Error getting stage info:', error?.message || error);
       // Return default values if query fails
       stageInfo = [{
         stageName: 'المرحلة الابتدائية',

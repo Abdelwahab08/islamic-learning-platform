@@ -54,8 +54,8 @@ export async function GET(request: NextRequest) {
       `, [date]);
       
       scheduleItems = result;
-    } catch (error) {
-      console.log('Error getting schedule:', error.message);
+    } catch (error: any) {
+      console.log('Error getting schedule:', error?.message || error);
       // Return empty array if query fails
       scheduleItems = [];
     }

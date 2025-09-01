@@ -45,8 +45,8 @@ export async function GET() {
       `, [studentId]);
       
       certificates = result;
-    } catch (error) {
-      console.log('Error getting certificates:', error.message);
+    } catch (error: any) {
+      console.log('Error getting certificates:', error?.message || error);
       // Return empty array if query fails
       certificates = [];
     }
