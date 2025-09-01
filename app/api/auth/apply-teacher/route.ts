@@ -65,14 +65,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create user
+    // Create user with pending approval
     const userId = uuidv4()
     await executeUpdate(
       'INSERT INTO users (id, role, email, password_hash, is_approved, onboarding_status) VALUES (?, ?, ?, ?, ?, ?)',
-      [userId, 'TEACHER', email, passwordHash, 0, 'PENDING_REVIEW']
+      [userId, 'TEACHER', email, passwordHash, 0, 'PENDING']
     )
 
-    // Create teacher record with new fields
+    // Create teacher record with verification pending
     const teacherId = uuidv4()
     await executeUpdate(
       'INSERT INTO teachers (id, user_id, full_name, phone_number, bio, cv_file, verified) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -80,8 +80,10 @@ export async function POST(request: NextRequest) {
     )
 
     return NextResponse.json({
-      message: 'تم تقديم طلبك بنجاح',
+      message: 'تم تقديم طلبك بنجاح! سيتم مراجعة طلبك من قبل الإدارة قريباً',
       userId: userId,
+      status: 'pending_approval',
+      type: 'teacher'
     })
 
   } catch (error) {
