@@ -24,11 +24,7 @@ export async function GET(request: NextRequest) {
         u.last_name,
         CASE 
           WHEN u.role = 'STUDENT' THEN (
-            SELECT JSON_OBJECT(
-              'id', t.id,
-              'name', CONCAT(u2.first_name, ' ', u2.last_name),
-              'email', u2.email
-            )
+            SELECT CONCAT(u2.first_name, ' ', u2.last_name)
             FROM teacher_students ts
             JOIN teachers t ON ts.teacher_id = t.id
             JOIN users u2 ON t.user_id = u2.id
@@ -37,7 +33,7 @@ export async function GET(request: NextRequest) {
             LIMIT 1
           )
           ELSE NULL
-        END as assigned_teacher
+        END as assigned_teacher_name
       FROM users u
       ORDER BY u.created_at DESC
     `)
@@ -56,7 +52,10 @@ export async function GET(request: NextRequest) {
         last_name: user.last_name || '',
         phone: null
       },
-      assignedTeacher: user.assigned_teacher ? JSON.parse(user.assigned_teacher) : null
+      assignedTeacher: user.assigned_teacher_name ? {
+        name: user.assigned_teacher_name,
+        email: null // We don't have email in the simplified query
+      } : null
     }))
 
     return NextResponse.json(transformedUsers)
