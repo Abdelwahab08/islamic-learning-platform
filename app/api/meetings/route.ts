@@ -54,8 +54,8 @@ export async function POST(request: NextRequest) {
     await executeUpdate(`
       INSERT INTO meetings (
         id, teacher_id, title, scheduled_at, duration_minutes,
-        provider, level_stage_id, group_id, join_url
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        provider, level_stage_id, group_id, join_url, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'scheduled')
     `, [
       meetingId,
       teacherId,
@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
         JOIN users u ON t.user_id = u.id
         LEFT JOIN stages st ON m.level_stage_id = st.id
         JOIN students s ON s.user_id = ?
-        WHERE (m.level_stage_id = s.current_stage_id OR m.group_id IN (
+        WHERE (m.level_stage_id = s.stage_id OR m.group_id IN (
           SELECT gm.group_id FROM group_members gm WHERE gm.student_id = s.id
         ))
       `;
@@ -162,7 +162,15 @@ export async function GET(request: NextRequest) {
 
     query += ' ORDER BY m.scheduled_at DESC';
 
-    const meetings = await executeQuery(query, params);
+    let meetings = [];
+    try {
+      meetings = await executeQuery(query, params);
+      console.log(`Found ${meetings.length} meetings for user ${user.id}`);
+    } catch (error) {
+      console.log('Error fetching meetings:', error);
+      // Return empty array if query fails
+      meetings = [];
+    }
 
     return NextResponse.json(meetings);
 

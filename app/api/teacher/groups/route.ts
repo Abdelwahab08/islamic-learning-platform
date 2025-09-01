@@ -41,6 +41,11 @@ export async function GET(request: NextRequest) {
     try {
       console.log('Querying groups for teacher ID:', teacherRecordId)
       
+      // Debug: Check all groups and their teachers
+      const allGroups = await executeQuery('SELECT g.*, t.user_id as teacher_user_id FROM `groups` g JOIN teachers t ON g.teacher_id = t.id')
+      console.log(`Total groups in database: ${allGroups.length}`)
+      allGroups.forEach(g => console.log(`  Group: ${g.name}, Teacher User ID: ${g.teacher_user_id}, Current User: ${teacherId}`))
+      
       const groupsResult = await executeQuery(`
         SELECT 
           g.id,
@@ -56,7 +61,7 @@ export async function GET(request: NextRequest) {
         ORDER BY g.created_at DESC
       `, [teacherRecordId])
       
-      console.log(`Found ${groupsResult.length} groups in database`)
+      console.log(`Found ${groupsResult.length} groups for teacher ${teacherRecordId}`)
       
       groups = groupsResult.map((group: any) => ({
         id: group.id,

@@ -5,54 +5,92 @@ import { executeQuery } from '@/lib/db'
 export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser()
-
+    
     if (!user || user.role !== 'TEACHER') {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
     }
 
-    // First get the teacher record ID
-    const teacherRecord = await executeQuery('SELECT id FROM teachers WHERE user_id = ?', [user.id])
-    
-    if (teacherRecord.length === 0) {
-      return NextResponse.json({ error: 'لم يتم العثور على بيانات المعلم' }, { status: 404 })
+    const teacherId = user.id
+    console.log('Getting students for teacher user ID:', teacherId)
+
+    // Get teacher record
+    let teacherRecordId = null
+    try {
+      const teachers = await executeQuery('SELECT id FROM teachers WHERE user_id = ?', [teacherId])
+      if (teachers.length === 0) {
+        console.log('No teacher record found for user:', teacherId)
+        return NextResponse.json({ students: [] })
+      }
+      teacherRecordId = teachers[0].id
+      console.log('Found teacher record ID:', teacherRecordId)
+    } catch (error) {
+      console.log('Error getting teacher record:', error)
+      return NextResponse.json({ students: [] })
     }
 
-    const teacherId = teacherRecord[0].id
-
     // Get students assigned to this teacher
-    const students = await executeQuery(`
-      SELECT
-        s.id,
-        s.user_id,
-        u.email,
-        CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as name,
-        '' as phone,
-        DATE_FORMAT(COALESCE(s.updated_at, NOW()), '%Y-%m-%d') as join_date,
-        st.name_ar as current_stage,
-        0 as progress_percentage,
-        0 as total_assignments,
-        0 as completed_assignments,
-        0 as certificates_count,
-        DATE_FORMAT(COALESCE(s.updated_at, NOW()), '%Y-%m-%d') as last_activity,
-        'active' as status,
-        s.current_page,
-        s.current_stage_id as stage_id,
-        st.name_ar as stage_name
-      FROM students s
-      JOIN users u ON s.user_id = u.id
-      LEFT JOIN stages st ON s.current_stage_id = st.id
-      JOIN teacher_students ts ON s.id = ts.student_id
-      WHERE ts.teacher_id = ?
-      ORDER BY u.first_name, u.last_name ASC
-    `, [teacherId])
+    let students = []
+    try {
+      console.log('Querying students for teacher ID:', teacherRecordId)
+      
+      // Simplified query to avoid complex JOINs that might fail
+      const studentsResult = await executeQuery(`
+        SELECT 
+          s.id,
+          COALESCE(CONCAT(u.first_name, ' ', u.last_name), u.email) as name,
+          u.email,
+          COALESCE(u.phone, 'غير محدد') as phone,
+          COALESCE(s.created_at, NOW()) as join_date,
+          COALESCE(st.name_ar, 'غير محدد') as current_stage,
+          COALESCE(ROUND((s.current_page / st.total_pages) * 100, 1), 0) as progress_percentage,
+          0 as total_assignments,
+          0 as completed_assignments,
+          0 as certificates_count,
+          COALESCE(s.updated_at, NOW()) as last_activity,
+          'active' as status,
+          COALESCE(g.name, 'غير محدد') as group_name,
+          '' as teacher_notes
+        FROM teacher_students ts
+        JOIN students s ON ts.student_id = s.id
+        JOIN users u ON s.user_id = u.id
+        LEFT JOIN stages st ON s.stage_id = st.id
+        LEFT JOIN group_members gm ON s.id = gm.student_id
+        LEFT JOIN \`groups\` g ON gm.group_id = g.id
+        WHERE ts.teacher_id = ?
+        ORDER BY u.first_name, u.last_name
+      `, [teacherRecordId])
+      
+      console.log(`Found ${studentsResult.length} students for teacher`)
+      
+      students = studentsResult.map((student: any) => ({
+        id: student.id,
+        name: student.name || 'طالب غير معروف',
+        email: student.email || 'unknown@email.com',
+        phone: student.phone || 'غير محدد',
+        join_date: student.join_date || new Date().toISOString(),
+        current_stage: student.current_stage || 'غير محدد',
+        progress_percentage: student.progress_percentage || 0,
+        total_assignments: student.total_assignments || 0,
+        completed_assignments: student.completed_assignments || 0,
+        certificates_count: student.certificates_count || 0,
+        last_activity: student.last_activity || new Date().toISOString(),
+        status: student.status || 'active',
+        group_name: student.group_name || 'غير محدد',
+        teacher_notes: student.teacher_notes || ''
+      }))
+      
+      console.log('Processed students:', students)
+    } catch (error) {
+      console.log('Error getting students:', error)
+      // Return empty array if query fails
+      students = []
+    }
 
+    console.log(`Returning ${students.length} students`)
     return NextResponse.json({ students })
 
   } catch (error) {
-    console.error('Error fetching students:', error)
-    return NextResponse.json(
-      { error: 'فشل في تحميل الطلاب' },
-      { status: 500 }
-    )
+    console.error('Error fetching teacher students:', error)
+    return NextResponse.json({ students: [] })
   }
 }

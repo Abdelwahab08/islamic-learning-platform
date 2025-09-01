@@ -51,13 +51,13 @@ export async function POST(request: NextRequest) {
     try {
       const materialId = crypto.randomUUID()
       await executeQuery(`
-        INSERT INTO materials (id, teacher_id, stage_id, title, file_url, kind) 
-        VALUES (?, ?, ?, ?, ?, ?)
-      `, [materialId, teacherRecordId, stageId, title, JSON.stringify([fileUrl]), 'PDF'])
+        INSERT INTO materials (id, teacher_id, stage_id, title, file_url, created_at)
+        VALUES (?, ?, ?, ?, ?, NOW())
+      `, [materialId, teacherRecordId, stageId, title, fileUrl])
 
       return NextResponse.json({
         message: 'تم إضافة المادة التعليمية بنجاح',
-        materialId: materialId
+        materialId
       })
     } catch (error) {
       console.log('Error creating material:', error)
@@ -78,81 +78,94 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json(
         { message: 'غير مصرح لك بالوصول إلى المواد التعليمية' },
         { status: 403 }
-      );
+      )
     }
 
-    const { searchParams } = new URL(request.url);
-    const stageId = searchParams.get('stageId');
+    const { searchParams } = new URL(request.url)
+    const stageId = searchParams.get('stageId')
+    const groupId = searchParams.get('groupId')
 
-    let query = '';
-    let params: any[] = [];
+    let query = ''
+    let params: any[] = []
 
     if (user.role === 'ADMIN') {
       // Admin can see all materials
       query = `
         SELECT 
           m.*,
-          CONCAT(u.first_name, ' ', u.last_name) as teacher_name,
-          COALESCE(m.stage_id, 'عام') as stage_name
+          u.email as teacher_email,
+          st.name_ar as stage_name
         FROM materials m
         JOIN teachers t ON m.teacher_id = t.id
         JOIN users u ON t.user_id = u.id
+        LEFT JOIN stages st ON m.stage_id = st.id
         WHERE 1=1
-      `;
+      `
     } else if (user.role === 'TEACHER') {
       // Teacher can see materials they created
       query = `
         SELECT 
           m.*,
-          CONCAT(u.first_name, ' ', u.last_name) as teacher_name,
-          COALESCE(m.stage_id, 'عام') as stage_name
+          u.email as teacher_email,
+          st.name_ar as stage_name
         FROM materials m
         JOIN teachers t ON m.teacher_id = t.id
         JOIN users u ON t.user_id = u.id
+        LEFT JOIN stages st ON m.stage_id = st.id
         WHERE t.user_id = ?
-      `;
-      params.push(user.id);
+      `
+      params.push(user.id)
     } else if (user.role === 'STUDENT') {
-      // Student can see materials
+      // Student can see materials for their stage or group
       query = `
         SELECT 
           m.*,
-          CONCAT(u.first_name, ' ', u.last_name) as teacher_name,
-          COALESCE(m.stage_id, 'عام') as stage_name
+          u.email as teacher_email,
+          st.name_ar as stage_name
         FROM materials m
         JOIN teachers t ON m.teacher_id = t.id
         JOIN users u ON t.user_id = u.id
-        WHERE 1=1
-      `;
+        LEFT JOIN stages st ON m.stage_id = st.id
+        JOIN students s ON s.user_id = ?
+        WHERE (m.stage_id = s.stage_id OR m.stage_id IN (
+          SELECT gm.group_id FROM group_members gm WHERE gm.student_id = s.id
+        ))
+      `
+      params.push(user.id)
     }
 
-    // Optional filter if caller passes a stage value via stageId param
     if (stageId) {
-      query += ' AND m.stage_id = ?';
-      params.push(stageId);
+      query += ' AND m.stage_id = ?'
+      params.push(stageId)
     }
 
-    query += ' ORDER BY m.created_at DESC';
+    if (groupId) {
+      query += ' AND m.stage_id IN (SELECT stage_id FROM students WHERE id IN (SELECT student_id FROM group_members WHERE group_id = ?))'
+      params.push(groupId)
+    }
 
-    let materials = [];
+    query += ' ORDER BY m.created_at DESC'
+
+    let materials = []
     try {
-      materials = await executeQuery(query, params);
+      materials = await executeQuery(query, params)
+      console.log(`Found ${materials.length} materials`)
     } catch (error) {
-      console.log('Error fetching materials:', error);
+      console.log('Error fetching materials:', error)
       // Return empty array if query fails
-      materials = [];
+      materials = []
     }
 
-    return NextResponse.json(materials);
+    return NextResponse.json(materials)
 
   } catch (error) {
-    console.error('Error fetching materials:', error);
+    console.error('Error fetching materials:', error)
     // Return empty array instead of error
-    return NextResponse.json([]);
+    return NextResponse.json([])
   }
 }
