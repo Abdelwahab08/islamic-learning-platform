@@ -47,14 +47,29 @@ export default function AdminContentPage() {
 
   const fetchMaterials = async () => {
     try {
-      const response = await fetch(`${window.location.origin}/api/materials`)
+      // Add cache-busting parameter to force fresh request
+      const response = await fetch(`${window.location.origin}/api/materials?t=${Date.now()}`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      })
+      
       if (response.ok) {
-        const data = await response.json()
-        setMaterials(data)
+        const contentType = response.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json()
+          setMaterials(data)
+        } else {
+          console.error('Response is not JSON:', contentType)
+          toast.error('فشل في تحميل المحتوى التعليمي - استجابة غير صحيحة')
+        }
       } else {
+        console.error('API response not ok:', response.status, response.statusText)
         toast.error('فشل في تحميل المحتوى التعليمي')
       }
     } catch (error) {
+      console.error('Fetch error:', error)
       toast.error('فشل في تحميل المحتوى التعليمي')
     } finally {
       setLoading(false)
