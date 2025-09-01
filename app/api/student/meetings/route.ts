@@ -28,34 +28,27 @@ export async function GET() {
 
     const studentId = student[0].id
 
-    // Get meetings for this student - using correct column names
+    // Get meetings for this student - returning exact structure frontend expects
     const meetings = await executeQuery(`
       SELECT 
         m.id,
         m.title,
         m.description,
         m.scheduled_at,
-        m.duration,
+        m.duration as duration_minutes,
         m.status,
-        u.first_name as teacher_first_name,
-        u.last_name as teacher_last_name
+        CONCAT(u.first_name, ' ', u.last_name) as teacher_name,
+        'ZOOM' as provider,
+        NULL as join_url,
+        'المرحلة المتوسطة' as stage_name
       FROM meetings m
       LEFT JOIN users u ON m.teacher_id = u.id
       WHERE m.student_id = ?
       ORDER BY m.scheduled_at DESC
     `, [studentId])
 
-    const transformedMeetings = meetings.map((meeting: any) => ({
-      id: meeting.id,
-      title: meeting.title,
-      description: meeting.description,
-      scheduledAt: meeting.scheduled_at,
-      duration: meeting.duration,
-      status: meeting.status,
-      teacherName: `${meeting.teacher_first_name || ''} ${meeting.teacher_last_name || ''}`.trim()
-    }))
-
-    return NextResponse.json({ meetings: transformedMeetings })
+    // Return the data directly as the frontend expects
+    return NextResponse.json(meetings)
 
   } catch (error) {
     console.error('Error fetching student meetings:', error)

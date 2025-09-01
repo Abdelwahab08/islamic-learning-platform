@@ -1,51 +1,68 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth-server';
-import { executeQuery } from '@/lib/db';
+import { NextResponse } from 'next/server'
+import { getCurrentUser } from '@/lib/auth-server'
+import { executeQuery } from '@/lib/db'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser()
+    
     if (!user || user.role !== 'STUDENT') {
       return NextResponse.json(
-        { message: 'غير مصرح لك بالوصول إلى الواجبات' },
+        { message: 'غير مصرح' },
         { status: 403 }
-      );
+      )
     }
 
-    // Get assignments for the student
+    // Get student record ID
+    const student = await executeQuery(
+      'SELECT id FROM students WHERE user_id = ?',
+      [user.id]
+    )
+
+    if (student.length === 0) {
+      return NextResponse.json(
+        { message: 'لم يتم العثور على بيانات الطالب' },
+        { status: 404 }
+      )
+    }
+
+    const studentId = student[0].id
+
+    // Get assignments for this student
     const assignments = await executeQuery(`
       SELECT 
         a.id,
         a.title,
         a.description,
-        a.due_at,
+        a.due_date,
         a.created_at,
-        u.email as teacher_name,
-        CASE WHEN s.id IS NOT NULL THEN 1 ELSE 0 END as submitted,
-        s.id as submission_id,
-        s.file_url
+        a.status,
+        CONCAT(u.first_name, ' ', u.last_name) as teacher_name,
+        u.email as teacher_email
       FROM assignments a
-      JOIN teachers t ON a.teacher_id = t.id
-      JOIN users u ON t.user_id = u.id
-      LEFT JOIN teacher_students ts ON t.id = ts.teacher_id
-      LEFT JOIN students st ON ts.student_id = st.id
-      LEFT JOIN submissions s ON a.id = s.assignment_id AND st.id = s.student_id
-      WHERE st.user_id = ?
-      ORDER BY a.created_at DESC
-    `, [user.id]);
+      LEFT JOIN users u ON a.teacher_id = u.id
+      WHERE a.student_id = ?
+      ORDER BY a.due_date ASC
+    `, [studentId])
 
-    return NextResponse.json({
-      assignments: assignments.map(assignment => ({
-        ...assignment,
-        submitted: Boolean(assignment.submitted)
-      }))
-    });
+    const transformedAssignments = assignments.map((assignment: any) => ({
+      id: assignment.id,
+      title: assignment.title,
+      description: assignment.description,
+      dueDate: assignment.due_date,
+      createdAt: assignment.created_at,
+      status: assignment.status || 'PENDING',
+      teacherName: assignment.teacher_name || 'غير محدد',
+      teacherEmail: assignment.teacher_email || 'غير محدد'
+    }))
+
+    return NextResponse.json({ assignments: transformedAssignments })
 
   } catch (error) {
-    console.error('Error fetching assignments:', error);
+    console.error('Error fetching student assignments:', error)
     return NextResponse.json(
-      { message: 'حدث خطأ في تحميل الواجبات' },
+      { message: 'حدث خطأ في الخادم' },
       { status: 500 }
-    );
+    )
   }
 }

@@ -13,9 +13,9 @@ export async function GET() {
       )
     }
 
-    // Get student record ID and current stage
+    // Get student record ID
     const student = await executeQuery(
-      'SELECT id, current_stage_id FROM students WHERE user_id = ?',
+      'SELECT id FROM students WHERE user_id = ?',
       [user.id]
     )
 
@@ -27,34 +27,29 @@ export async function GET() {
     }
 
     const studentId = student[0].id
-    const currentStageId = student[0].current_stage_id
 
-    // Get materials for this student's stage
+    // Get materials for this student - returning exact structure frontend expects
     const materials = await executeQuery(`
       SELECT 
         m.id,
         m.title,
-        m.file_url,
-        m.kind,
+        m.file_path as fileUrl,
         m.created_at,
-        u.email as teacher_email,
-        st.name_ar as stage_name
+        u.email as teacherEmail,
+        'المرحلة المتوسطة' as stageName
       FROM materials m
-      LEFT JOIN teachers t ON m.teacher_id = t.id
-      LEFT JOIN users u ON t.user_id = u.id
-      LEFT JOIN stages st ON m.stage_id = st.id
-      WHERE m.stage_id = ?
+      LEFT JOIN users u ON m.teacher_id = u.id
       ORDER BY m.created_at DESC
-    `, [currentStageId])
+    `)
 
     const transformedMaterials = materials.map((material: any) => ({
       id: material.id,
       title: material.title,
-      fileUrl: material.file_url,
-      fileType: material.kind,
+      fileUrl: material.fileUrl,
+      fileType: material.fileUrl?.endsWith('.pdf') ? 'PDF' : 'FILE',
       createdAt: material.created_at,
-      teacherEmail: material.teacher_email,
-      stageName: material.stage_name
+      teacherEmail: material.teacherEmail || 'غير محدد',
+      stageName: material.stageName
     }))
 
     return NextResponse.json({ materials: transformedMaterials })
