@@ -43,9 +43,9 @@ export async function GET(request: NextRequest) {
           g.level_stage_id,
           st.name_ar as stage_name,
           COUNT(gm.student_id) as student_count
-        FROM groups g
+        FROM \`groups\` g
         LEFT JOIN stages st ON g.level_stage_id = st.id
-        LEFT JOIN group_members gm ON g.id = gm.group_id
+        LEFT JOIN \`group_members\` gm ON g.id = gm.group_id
         WHERE g.teacher_id = ?
         GROUP BY g.id, g.name, g.level_stage_id, st.name_ar
         ORDER BY g.created_at DESC
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
     try {
       const groupId = crypto.randomUUID()
       await executeQuery(`
-        INSERT INTO groups (id, teacher_id, name, level_stage_id) 
+        INSERT INTO \`groups\` (id, teacher_id, name, level_stage_id) 
         VALUES (?, ?, ?, ?)
       `, [groupId, teacherRecordId, name, stageId || null])
 
