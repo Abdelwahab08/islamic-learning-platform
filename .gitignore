@@ -8,6 +8,10 @@ yarn-error.log*
 .next/
 out/
 
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
 # Production
 build/
 
