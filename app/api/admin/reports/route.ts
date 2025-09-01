@@ -54,8 +54,8 @@ export async function GET(request: NextRequest) {
       SELECT 
         DATE_FORMAT(created_at, '%Y-%m') as month,
         COUNT(*) as newUsers,
-        (SELECT COUNT(*) FROM certificates WHERE DATE_FORMAT(issued_at, '%Y-%m') = DATE_FORMAT(users.created_at, '%Y-%m')) as newCertificates,
-        (SELECT COUNT(*) FROM assignments WHERE DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(users.created_at, '%Y-%m')) as newAssignments
+        0 as newCertificates,
+        0 as newAssignments
       FROM users
       WHERE created_at >= ?
       GROUP BY DATE_FORMAT(created_at, '%Y-%m')
