@@ -34,7 +34,7 @@ export async function GET() {
         SELECT 
           m.id,
           m.title,
-          m.file_path as fileUrl,
+          m.file_url as fileUrl,
           m.created_at,
           'teacher@test.com' as teacherEmail,
           'المرحلة المتوسطة' as stageName

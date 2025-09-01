@@ -35,7 +35,6 @@ export async function GET() {
           a.id,
           a.title,
           a.description,
-          COALESCE(a.due_at, a.due_date) AS due_at,
           a.created_at,
           'teacher@test.com' AS teacher_email,
           'معلم تجريبي' AS teacher_name,
@@ -43,7 +42,7 @@ export async function GET() {
         FROM assignments a
         JOIN assignment_targets at ON at.assignment_id = a.id
         WHERE at.student_id = ?
-        ORDER BY COALESCE(a.due_at, a.due_date) ASC
+        ORDER BY a.created_at DESC
         LIMIT 10
       `, [studentId]);
       
@@ -58,7 +57,7 @@ export async function GET() {
       id: assignment.id,
       title: assignment.title,
       description: assignment.description,
-      dueDate: assignment.due_at,
+      dueDate: null, // No due date in current schema
       createdAt: assignment.created_at,
       status: assignment.submission_id ? 'SUBMITTED' : 'PENDING',
       teacherName: assignment.teacher_name?.trim() || 'غير محدد',
