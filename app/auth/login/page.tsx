@@ -39,7 +39,9 @@ export default function LoginPage() {
 
       if (response.ok) {
         toast.success('تم تسجيل الدخول بنجاح')
-        router.push(data.redirect || redirect)
+        // Use the redirectPath from the user data
+        const redirectPath = data.user?.redirectPath || redirect
+        router.push(redirectPath)
       } else {
         toast.error(data.message || 'حدث خطأ في تسجيل الدخول')
       }
