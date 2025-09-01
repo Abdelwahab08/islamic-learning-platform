@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth-server'
 import { executeQuery } from '@/lib/db'
 
+interface StudentProgress {
+  studentId: string
+  studentName: string
+  studentEmail: string
+  stageName: string
+  currentPage: number
+  totalPages: number
+  progressPercentage: number
+  assignmentsCompleted: number
+  certificatesEarned: number
+}
+
 export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser()
@@ -26,7 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get weekly progress data for students
-    let weeklyProgress = []
+    let weeklyProgress: StudentProgress[] = []
     try {
       const progressResult = await executeQuery(`
         SELECT 
@@ -50,7 +62,7 @@ export async function GET(request: NextRequest) {
         ORDER BY progress_percentage DESC
       `, [teacherRecordId])
       
-      weeklyProgress = progressResult.map(student => ({
+      weeklyProgress = progressResult.map((student: any) => ({
         studentId: student.student_id,
         studentName: student.student_name || 'طالب',
         studentEmail: student.student_email,

@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth-server'
 import { executeQuery } from '@/lib/db'
 
+interface Group {
+  id: string
+  name: string
+  stageId: string | null
+  stageName: string
+  studentCount: number
+}
+
 export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser()
@@ -26,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get groups for this teacher
-    let groups = []
+    let groups: Group[] = []
     try {
       const groupsResult = await executeQuery(`
         SELECT 
@@ -43,7 +51,7 @@ export async function GET(request: NextRequest) {
         ORDER BY g.created_at DESC
       `, [teacherRecordId])
       
-      groups = groupsResult.map(group => ({
+      groups = groupsResult.map((group: any) => ({
         id: group.id,
         name: group.name,
         stageId: group.level_stage_id,
