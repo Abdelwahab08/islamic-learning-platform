@@ -182,7 +182,7 @@ export async function GET(request: NextRequest) {
       `;
       params.push(user.id);
     } else if (user.role === 'STUDENT') {
-      // Student can see materials for their stage
+      // Student can see materials for their stage (handle both stage_id and current_stage_id)
       query = `
         SELECT 
           m.*,
@@ -193,7 +193,7 @@ export async function GET(request: NextRequest) {
         JOIN users u ON t.user_id = u.id
         LEFT JOIN stages st ON m.stage_id = st.id
         JOIN students s ON s.user_id = ?
-        WHERE m.stage_id = s.current_stage_id
+        WHERE m.stage_id = COALESCE(s.stage_id, s.current_stage_id)
       `;
       params.push(user.id);
     }

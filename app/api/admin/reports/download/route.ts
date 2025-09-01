@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
                COUNT(s.id) as students,
                ROUND((COUNT(s.id) / (SELECT COUNT(*) FROM students)) * 100, 1) as completionRate
              FROM stages st
-             LEFT JOIN students s ON st.id = s.current_stage_id
+             LEFT JOIN students s ON st.id = COALESCE(s.stage_id, s.current_stage_id)
              GROUP BY st.id, st.name_ar
              ORDER BY st.id
            `)
@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
                COUNT(s.id) as students,
                ROUND((COUNT(s.id) / (SELECT COUNT(*) FROM students)) * 100, 1) as completionRate
              FROM stages st
-             LEFT JOIN students s ON st.id = s.current_stage_id
+             LEFT JOIN students s ON st.id = COALESCE(s.stage_id, s.current_stage_id)
              GROUP BY st.id, st.name_ar
              ORDER BY st.id
            `)
