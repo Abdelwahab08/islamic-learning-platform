@@ -1,0 +1,8 @@
+# Copy this to .env.local and update with your actual domain
+DB_HOST=sql105.infinityfree.com
+DB_USER=if0_39829212
+DB_PASSWORD=cH1VFIv7x1m
+DB_NAME=if0_39829212_islamic_db
+NEXTAUTH_SECRET=yaqeen-islamic-platform-secret-key-2024
+NEXTAUTH_URL=https://your-domain.infinityfreeapp.com
+NODE_ENV=production
