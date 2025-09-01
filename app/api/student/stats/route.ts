@@ -28,26 +28,52 @@ export async function GET() {
 
     const studentId = student[0].id
 
-    // Get student statistics
-    const [certificateCount] = await executeQuery(
-      'SELECT COUNT(*) as count FROM certificates WHERE student_id = ?',
-      [studentId]
-    )
+    // Get student statistics with proper error handling
+    let certificateCount = { count: 0 };
+    let assignmentCount = { count: 0 };
+    let meetingCount = { count: 0 };
+    let materialCount = { count: 0 };
 
-    const [assignmentCount] = await executeQuery(
-      'SELECT COUNT(*) as count FROM assignments WHERE student_id = ?',
-      [studentId]
-    )
+    try {
+      const [certResult] = await executeQuery(
+        'SELECT COUNT(*) as count FROM certificates WHERE student_id = ?',
+        [studentId]
+      );
+      certificateCount = certResult;
+    } catch (error: any) {
+      console.log('Error getting certificate count:', error?.message || error);
+    }
 
-    const [meetingCount] = await executeQuery(
-      'SELECT COUNT(*) as count FROM meetings WHERE student_id = ?',
-      [studentId]
-    )
+    try {
+      const [assignResult] = await executeQuery(
+        'SELECT COUNT(*) as count FROM assignment_targets WHERE student_id = ?',
+        [studentId]
+      );
+      assignmentCount = assignResult;
+    } catch (error: any) {
+      console.log('Error getting assignment count:', error?.message || error);
+    }
 
-    const [materialCount] = await executeQuery(
-      'SELECT COUNT(*) as count FROM materials',
-      []
-    )
+    try {
+      // Since meetings table doesn't have student_id, get total meetings count
+      const [meetResult] = await executeQuery(
+        'SELECT COUNT(*) as count FROM meetings WHERE scheduled_at > NOW()',
+        []
+      );
+      meetingCount = meetResult;
+    } catch (error: any) {
+      console.log('Error getting meeting count:', error?.message || error);
+    }
+
+    try {
+      const [matResult] = await executeQuery(
+        'SELECT COUNT(*) as count FROM materials',
+        []
+      );
+      materialCount = matResult;
+    } catch (error: any) {
+      console.log('Error getting material count:', error?.message || error);
+    }
 
     const stats = {
       totalCertificates: certificateCount.count,
