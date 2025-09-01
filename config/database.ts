@@ -1,17 +1,38 @@
 import mysql from 'mysql2/promise';
 
-// Database configuration
-export const dbConfig = {
-  host: process.env.DB_HOST || '127.0.0.1',
-  port: parseInt(process.env.DB_PORT || '3306'),
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASS || '',
-  database: process.env.DB_NAME || 'islamic_db',
-  charset: 'utf8mb4',
-  timezone: '+00:00',
-  connectionLimit: 10,
-  queueLimit: 5,
-};
+// Database configuration - Support both Railway MySQL URL and individual variables
+function getDbConfig() {
+  // If Railway MySQL URL is available, parse it
+  if (process.env.MYSQL_URL) {
+    const url = new URL(process.env.MYSQL_URL);
+    return {
+      host: url.hostname,
+      port: parseInt(url.port || '3306'),
+      user: url.username,
+      password: url.password,
+      database: url.pathname.slice(1), // Remove leading slash
+      charset: 'utf8mb4',
+      timezone: '+00:00',
+      connectionLimit: 10,
+      queueLimit: 5,
+    };
+  }
+  
+  // Fallback to individual environment variables
+  return {
+    host: process.env.DB_HOST || '127.0.0.1',
+    port: parseInt(process.env.DB_PORT || '3306'),
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASS || '',
+    database: process.env.DB_NAME || 'islamic_db',
+    charset: 'utf8mb4',
+    timezone: '+00:00',
+    connectionLimit: 10,
+    queueLimit: 5,
+  };
+}
+
+export const dbConfig = getDbConfig();
 
 // Create connection pool
 const pool = mysql.createPool(dbConfig);
