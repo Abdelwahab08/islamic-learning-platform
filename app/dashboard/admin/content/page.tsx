@@ -47,7 +47,7 @@ export default function AdminContentPage() {
 
   const fetchMaterials = async () => {
     try {
-      const response = await fetch('/api/materials')
+      const response = await fetch(`${window.location.origin}/api/materials`)
       if (response.ok) {
         const data = await response.json()
         setMaterials(data)
@@ -65,7 +65,7 @@ export default function AdminContentPage() {
     if (!confirm('هل أنت متأكد من حذف هذا المحتوى؟')) return
 
     try {
-      const response = await fetch(`/api/materials/${materialId}`, {
+      const response = await fetch(`${window.location.origin}/api/materials/${materialId}`, {
         method: 'DELETE'
       })
       
@@ -82,7 +82,7 @@ export default function AdminContentPage() {
 
   const downloadMaterial = async (material: Material) => {
     try {
-      const response = await fetch(`/api/materials/${material.id}/download`)
+      const response = await fetch(`${window.location.origin}/api/materials/${material.id}/download`)
       if (response.ok) {
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
@@ -116,7 +116,7 @@ export default function AdminContentPage() {
     if (!editingMaterial) return
 
     try {
-      const response = await fetch(`/api/materials/${editingMaterial.id}`, {
+      const response = await fetch(`${window.location.origin}/api/materials/${editingMaterial.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
