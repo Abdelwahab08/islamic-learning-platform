@@ -28,33 +28,30 @@ export async function GET() {
 
     const studentId = student[0].id
 
-    // Get certificates for this student
+    // Get certificates for this student - using correct column names
     const certificates = await executeQuery(`
       SELECT 
         c.id,
-        c.serial,
-        c.grade,
-        c.issued_at,
+        c.title,
+        c.description,
         c.status,
-        u.email as teacher_email,
-        st.name_ar as stage_name
+        c.issued_at,
+        u.first_name as teacher_first_name,
+        u.last_name as teacher_last_name
       FROM certificates c
-      LEFT JOIN teachers t ON c.teacher_id = t.id
-      LEFT JOIN users u ON t.user_id = u.id
-      LEFT JOIN stages st ON c.stage_id = st.id
+      LEFT JOIN users u ON c.teacher_id = u.id
       WHERE c.student_id = ?
       ORDER BY c.issued_at DESC
     `, [studentId])
 
     const transformedCertificates = certificates.map((cert: any) => ({
       id: cert.id,
-      serialNumber: cert.serial,
-      grade: cert.grade,
-      issueDate: cert.issued_at,
+      title: cert.title,
+      description: cert.description,
       status: cert.status,
-      createdAt: cert.issued_at, // Use issued_at as createdAt since created_at doesn't exist
-      teacherEmail: cert.teacher_email,
-      stageName: cert.stage_name
+      issueDate: cert.issued_at,
+      createdAt: cert.issued_at,
+      teacherName: `${cert.teacher_first_name || ''} ${cert.teacher_last_name || ''}`.trim()
     }))
 
     return NextResponse.json({ certificates: transformedCertificates })

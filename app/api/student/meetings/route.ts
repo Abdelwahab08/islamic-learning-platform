@@ -13,9 +13,9 @@ export async function GET() {
       )
     }
 
-    // Get student record ID and current stage
+    // Get student record ID
     const student = await executeQuery(
-      'SELECT id, current_stage_id FROM students WHERE user_id = ?',
+      'SELECT id FROM students WHERE user_id = ?',
       [user.id]
     )
 
@@ -27,44 +27,32 @@ export async function GET() {
     }
 
     const studentId = student[0].id
-    const currentStageId = student[0].current_stage_id
 
-    // Get meetings for this student's stage and groups
+    // Get meetings for this student - using correct column names
     const meetings = await executeQuery(`
-      SELECT DISTINCT
+      SELECT 
         m.id,
         m.title,
         m.description,
         m.scheduled_at,
-        m.duration_minutes,
-        m.meeting_type,
+        m.duration,
         m.status,
-        m.created_at,
-        u.email as teacher_email,
-        st.name_ar as stage_name,
-        g.name as group_name
+        u.first_name as teacher_first_name,
+        u.last_name as teacher_last_name
       FROM meetings m
-      LEFT JOIN teachers t ON m.teacher_id = t.id
-      LEFT JOIN users u ON t.user_id = u.id
-      LEFT JOIN stages st ON m.level_stage_id = st.id
-      LEFT JOIN groups g ON m.group_id = g.id
-      LEFT JOIN group_members gm ON m.group_id = gm.group_id
-      WHERE (m.level_stage_id = ? OR gm.student_id = ?)
-      ORDER BY m.scheduled_at ASC
-    `, [currentStageId, studentId])
+      LEFT JOIN users u ON m.teacher_id = u.id
+      WHERE m.student_id = ?
+      ORDER BY m.scheduled_at DESC
+    `, [studentId])
 
     const transformedMeetings = meetings.map((meeting: any) => ({
       id: meeting.id,
       title: meeting.title,
       description: meeting.description,
       scheduledAt: meeting.scheduled_at,
-      durationMinutes: meeting.duration_minutes,
-      meetingType: meeting.meeting_type,
+      duration: meeting.duration,
       status: meeting.status,
-      createdAt: meeting.created_at,
-      teacherEmail: meeting.teacher_email,
-      stageName: meeting.stage_name,
-      groupName: meeting.group_name
+      teacherName: `${meeting.teacher_first_name || ''} ${meeting.teacher_last_name || ''}`.trim()
     }))
 
     return NextResponse.json({ meetings: transformedMeetings })

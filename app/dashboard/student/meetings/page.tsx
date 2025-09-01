@@ -26,9 +26,9 @@ export default function StudentMeetingsPage() {
     fetchMeetings()
   }, [])
 
-  const fetchMeetings = async () => {
-    try {
-      const response = await fetch('/api/meetings')
+      const fetchMeetings = async () => {
+      try {
+        const response = await fetch('/api/student/meetings')
       if (response.ok) {
         const data = await response.json()
         setMeetings(data)
