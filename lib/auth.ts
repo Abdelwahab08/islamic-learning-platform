@@ -54,7 +54,7 @@ export async function getUserFromToken(token: string): Promise<User | null> {
     if (!payload) return null;
 
     const user = await executeQuerySingle<User>(
-      'SELECT * FROM v_user_access WHERE id = ?',
+      'SELECT u.id, u.email, u.role, u.is_approved, u.onboarding_status, u.first_name, u.last_name FROM users u WHERE u.id = ?',
       [payload.userId]
     );
 

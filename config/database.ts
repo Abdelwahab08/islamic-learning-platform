@@ -61,16 +61,8 @@ export async function executeQuery<T = any>(
   params: any[] = []
 ): Promise<T[]> {
   try {
-    // Create a new connection instead of using the pool
-    const connection = await mysql.createConnection({
-      host: process.env.DB_HOST || '127.0.0.1',
-      port: parseInt(process.env.DB_PORT || '3306'),
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASS || '',
-      database: process.env.DB_NAME || 'islamic_db',
-      charset: 'utf8mb4',
-      timezone: '+00:00'
-    });
+    // Use the same configuration as the pool (supports MYSQL_URL)
+    const connection = await mysql.createConnection(dbConfig);
     
     try {
       const [rows] = await connection.execute(query, params);
@@ -106,16 +98,8 @@ export async function executeQuerySingle<T = any>(
   params: any[] = []
 ): Promise<T | null> {
   try {
-    // Create a new connection instead of using the pool
-    const connection = await mysql.createConnection({
-      host: process.env.DB_HOST || '127.0.0.1',
-      port: parseInt(process.env.DB_PORT || '3306'),
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASS || '',
-      database: process.env.DB_NAME || 'islamic_db',
-      charset: 'utf8mb4',
-      timezone: '+00:00'
-    });
+    // Use the same configuration as the pool (supports MYSQL_URL)
+    const connection = await mysql.createConnection(dbConfig);
     
     try {
       const [rows] = await connection.execute(query, params);
@@ -136,16 +120,8 @@ export async function executeUpdate(
   params: any[] = []
 ): Promise<{ affectedRows: number; insertId?: number }> {
   try {
-    // Create a new connection instead of using the pool
-    const connection = await mysql.createConnection({
-      host: process.env.DB_HOST || '127.0.0.1',
-      port: parseInt(process.env.DB_PORT || '3306'),
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASS || '',
-      database: process.env.DB_NAME || 'islamic_db',
-      charset: 'utf8mb4',
-      timezone: '+00:00'
-    });
+    // Use the same configuration as the pool (supports MYSQL_URL)
+    const connection = await mysql.createConnection(dbConfig);
     
     try {
       const [result] = await connection.execute(query, params);
