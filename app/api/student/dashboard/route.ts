@@ -82,8 +82,8 @@ export async function GET() {
     try {
       const materials = await executeQuery('SELECT COUNT(*) as count FROM materials');
       totalMaterials = materials[0]?.count || 0;
-    } catch (error) {
-      console.log('Error getting materials:', error.message);
+    } catch (error: any) {
+      console.log('Error getting materials:', error?.message || error);
     }
 
     // For pending assignments, we'll use a simple calculation
