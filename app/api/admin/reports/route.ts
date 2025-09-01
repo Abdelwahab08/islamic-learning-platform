@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(reportData)
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching reports:', error)
     return NextResponse.json(
       { message: 'حدث خطأ في تحميل التقارير' },

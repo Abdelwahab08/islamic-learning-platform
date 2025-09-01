@@ -5,7 +5,7 @@ import { executeQuery } from '@/lib/db'
 export async function GET() {
   try {
     const user = await getCurrentUser()
-    
+
     if (!user || user.role !== 'STUDENT') {
       return NextResponse.json(
         { message: 'غير مصرح' },
@@ -28,37 +28,40 @@ export async function GET() {
 
     const studentId = student[0].id
 
-    // Get assignments for this student
+    // Get assignments for this student via assignment_targets; support due_at/due_date and teacher join via teachers->users
     const assignments = await executeQuery(`
-      SELECT 
+      SELECT
         a.id,
         a.title,
         a.description,
-        a.due_date,
+        COALESCE(a.due_at, a.due_date) AS due_at,
         a.created_at,
-        a.status,
-        CONCAT(u.first_name, ' ', u.last_name) as teacher_name,
-        u.email as teacher_email
+        uu.email AS teacher_email,
+        CONCAT(COALESCE(uu.first_name, ''), ' ', COALESCE(uu.last_name, '')) AS teacher_name,
+        s.id AS submission_id
       FROM assignments a
-      LEFT JOIN users u ON a.teacher_id = u.id
-      WHERE a.student_id = ?
-      ORDER BY a.due_date ASC
+      JOIN assignment_targets at ON at.assignment_id = a.id
+      LEFT JOIN teachers t ON a.teacher_id = t.id
+      LEFT JOIN users uu ON (t.user_id = uu.id OR a.teacher_id = uu.id)
+      LEFT JOIN submissions s ON s.assignment_id = a.id AND s.student_id = at.student_id
+      WHERE at.student_id = ?
+      ORDER BY COALESCE(a.due_at, a.due_date) ASC
     `, [studentId])
 
     const transformedAssignments = assignments.map((assignment: any) => ({
       id: assignment.id,
       title: assignment.title,
       description: assignment.description,
-      dueDate: assignment.due_date,
+      dueDate: assignment.due_at,
       createdAt: assignment.created_at,
-      status: assignment.status || 'PENDING',
-      teacherName: assignment.teacher_name || 'غير محدد',
+      status: assignment.submission_id ? 'SUBMITTED' : 'PENDING',
+      teacherName: assignment.teacher_name?.trim() || 'غير محدد',
       teacherEmail: assignment.teacher_email || 'غير محدد'
     }))
 
     return NextResponse.json({ assignments: transformedAssignments })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching student assignments:', error)
     return NextResponse.json(
       { message: 'حدث خطأ في الخادم' },

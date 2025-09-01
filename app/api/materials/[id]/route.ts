@@ -107,3 +107,4 @@ export async function DELETE(
     return NextResponse.json({ message: 'حدث خطأ في الحذف' }, { status: 500 })
   }
 }
+
