@@ -1,7 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/auth-server'
+import { cookies } from 'next/headers'
 import { executeQuery, executeUpdate } from '@/lib/db'
 import { v4 as uuidv4 } from 'uuid'
+import jwt from 'jsonwebtoken'
+
+// Get current user from cookies using the same JWT logic as login API
+async function getCurrentUser() {
+  try {
+    const cookieStore = await cookies()
+    const token = cookieStore.get('auth-token')?.value
+    
+    if (!token) return null
+    
+    // Use the same JWT secret as the login API
+    const secret = process.env.JWT_SECRET || 'fallback-secret'
+    const payload = jwt.verify(token, secret) as any
+    
+    if (!payload || !payload.userId) return null
+    
+    // Get user from database
+    const user = await executeQuery(
+      'SELECT u.id, u.email, u.role, u.is_approved, u.onboarding_status FROM users u WHERE u.id = ?',
+      [payload.userId]
+    )
+    
+    if (user.length === 0) return null
+    
+    return user[0]
+  } catch (error) {
+    console.error('Error getting current user:', error)
+    return null
+  }
+}
 
 export async function GET(
   request: NextRequest,
