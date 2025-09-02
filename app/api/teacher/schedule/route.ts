@@ -21,31 +21,31 @@ export async function GET(request: NextRequest) {
 
     // Try to fetch from lessons table first
     try {
-      const lessonsQuery = `
-        SELECT 
-          l.id,
-          l.day_of_week,
-          l.start_time,
-          l.subject,
-          l.duration_minutes,
-          l.room,
-          g.name as group_name
-        FROM lessons l
-        JOIN teachers t ON l.teacher_id = t.id
-        LEFT JOIN \`groups\` g ON l.group_id = g.id
-        WHERE t.user_id = ?
-        ORDER BY 
-          CASE l.day_of_week
-            WHEN 'monday' THEN 1
-            WHEN 'tuesday' THEN 2
-            WHEN 'wednesday' THEN 3
-            WHEN 'thursday' THEN 4
-            WHEN 'friday' THEN 5
-            WHEN 'saturday' THEN 6
-            WHEN 'sunday' THEN 7
-          END,
-          l.start_time
-      `
+      const lessonsQuery = [
+        'SELECT',
+        '  l.id,',
+        '  l.day_of_week,',
+        '  l.start_time,',
+        '  l.subject,',
+        '  l.duration_minutes,',
+        '  l.room,',
+        '  g.name as group_name',
+        'FROM lessons l',
+        'JOIN teachers t ON l.teacher_id = t.id',
+        'LEFT JOIN `groups` g ON l.group_id = g.id',
+        'WHERE t.user_id = ?',
+        'ORDER BY',
+        "  CASE l.day_of_week",
+        "    WHEN 'monday' THEN 1",
+        "    WHEN 'tuesday' THEN 2",
+        "    WHEN 'wednesday' THEN 3",
+        "    WHEN 'thursday' THEN 4",
+        "    WHEN 'friday' THEN 5",
+        "    WHEN 'saturday' THEN 6",
+        "    WHEN 'sunday' THEN 7",
+        '  END,',
+        '  l.start_time'
+      ].join('\n')
 
       const lessons = await executeQuery(lessonsQuery, [teacherId])
 
