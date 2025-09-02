@@ -72,35 +72,48 @@ export async function GET(
       console.error('Error parsing file_url:', error)
     }
 
-    // Try to construct file path - handle both local and production scenarios
-    const localPath = path.join(process.cwd(), 'uploads', 'materials', filename)
-    const publicPath = path.join(process.cwd(), 'public', filename.replace('/materials/', ''))
+    // Try to construct file path - handle multiple possible locations
+    const possiblePaths = [
+      // Try the exact path from file_url
+      path.join(process.cwd(), material.file_url.replace(/^\//, '')),
+      // Try uploads/materials folder
+      path.join(process.cwd(), 'uploads', 'materials', filename),
+      // Try uploads folder (for certificates)
+      path.join(process.cwd(), 'uploads', filename),
+      // Try public folder
+      path.join(process.cwd(), 'public', filename),
+      // Try public/materials folder
+      path.join(process.cwd(), 'public', 'materials', filename)
+    ]
     
     let fileBuffer: Buffer | null = null
     let finalPath = ''
 
-    try {
-      // First try local uploads folder
-      await fs.access(localPath)
-      fileBuffer = await fs.readFile(localPath)
-      finalPath = localPath
-    } catch (localError) {
+    // Try each possible path
+    for (const filePath of possiblePaths) {
       try {
-        // Try public folder (for production)
-        await fs.access(publicPath)
-        fileBuffer = await fs.readFile(publicPath)
-        finalPath = publicPath
-      } catch (publicError) {
-        // If neither exists, return error with helpful message
-        console.error('File not found in local or public folders:', { localPath, publicPath })
-        return NextResponse.json(
-          { 
-            message: 'الملف غير متوفر للتحميل حالياً',
-            details: 'يرجى التواصل مع الإدارة لتحديث الملف'
-          },
-          { status: 404 }
-        )
+        await fs.access(filePath)
+        fileBuffer = await fs.readFile(filePath)
+        finalPath = filePath
+        console.log('File found at:', filePath)
+        break
+      } catch (error) {
+        console.log('File not found at:', filePath)
+        continue
       }
+    }
+
+    if (!fileBuffer) {
+      // If no file found, return error with helpful message
+      console.error('File not found in any of these locations:', possiblePaths)
+      return NextResponse.json(
+        { 
+          message: 'الملف غير متوفر للتحميل حالياً',
+          details: 'يرجى التواصل مع الإدارة لتحديث الملف',
+          searchedPaths: possiblePaths.map(p => p.replace(process.cwd(), ''))
+        },
+        { status: 404 }
+      )
     }
 
     // Determine content type based on file extension
