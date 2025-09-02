@@ -1,9 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getCurrentUser } from '@/lib/auth-server'
 import { executeQuery } from '@/lib/db'
 import { v4 as uuidv4 } from 'uuid'
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getCurrentUser()
+    
+    if (!user || user.role !== 'TEACHER') {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
+    }
+
+    const teacherId = user.id
+    console.log('Getting teacher record for user ID:', teacherId)
+
+    // Get teacher record ID
+    let teacherRecordId = null
+    try {
+      const teachers = await executeQuery('SELECT id FROM teachers WHERE user_id = ?', [teacherId])
+      if (teachers.length === 0) {
+        console.log('No teacher record found for user:', teacherId)
+        return NextResponse.json({ error: 'لم يتم العثور على المدرس' }, { status: 404 })
+      }
+      teacherRecordId = teachers[0].id
+      console.log('Found teacher record ID:', teacherRecordId)
+    } catch (error) {
+      console.log('Error getting teacher record:', error)
+      return NextResponse.json({ error: 'فشل في العثور على المدرس' }, { status: 500 })
+    }
+
     const body = await request.json()
     const { student_id, date, stage_id, page_number, rating, notes } = body
 
@@ -13,10 +38,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    // Get teacher ID from the request context (you might need to add authentication)
-    // For now, we'll use a placeholder - you should implement proper teacher authentication
-    const teacherId = 'placeholder-teacher-id' // This should come from authenticated user
 
     // Check if rating already exists for this student and date
     const existingRating = await executeQuery(
@@ -45,7 +66,7 @@ export async function POST(request: NextRequest) {
         `INSERT INTO progress_logs 
          (id, student_id, teacher_id, stage_id, page_number, rating, notes, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-        [ratingId, student_id, teacherId, stage_id, page_number, rating, notes]
+        [ratingId, student_id, teacherRecordId, stage_id, page_number, rating, notes]
       )
       
       result = await executeQuery(
