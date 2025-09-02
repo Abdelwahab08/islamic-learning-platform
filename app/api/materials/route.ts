@@ -127,6 +127,19 @@ export async function GET(request: NextRequest) {
       `
     } else if (user.role === 'TEACHER') {
       // Teacher can see materials they created
+      // Get teacher record first
+      let teacherRecordId = null;
+      try {
+        const teachers = await executeQuery('SELECT id FROM teachers WHERE user_id = ?', [user.id]);
+        if (teachers.length === 0) {
+          return NextResponse.json([]);
+        }
+        teacherRecordId = teachers[0].id;
+      } catch (error) {
+        console.error('Error getting teacher record:', error);
+        return NextResponse.json([]);
+      }
+
       query = `
         SELECT 
           m.*,
@@ -136,9 +149,9 @@ export async function GET(request: NextRequest) {
         JOIN teachers t ON m.teacher_id = t.id
         JOIN users u ON t.user_id = u.id
         LEFT JOIN stages st ON m.stage_id = st.id
-        WHERE t.user_id = ?
-      `
-      params.push(user.id)
+        WHERE m.teacher_id = ?
+      `;
+      params.push(teacherRecordId);
     } else if (user.role === 'STUDENT') {
       // Student can see materials for their stage or group
       query = `

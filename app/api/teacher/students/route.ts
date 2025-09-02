@@ -65,14 +65,12 @@ export async function GET(request: NextRequest) {
           0 as certificates_count,
           COALESCE(s.updated_at, NOW()) as last_activity,
           'active' as status,
-          COALESCE(g.name, 'غير محدد') as group_name,
+          'غير محدد' as group_name,
           '' as teacher_notes
         FROM teacher_students ts
         JOIN students s ON ts.student_id = s.id
         JOIN users u ON s.user_id = u.id
         LEFT JOIN stages st ON s.stage_id = st.id
-        LEFT JOIN group_members gm ON s.id = gm.student_id
-        LEFT JOIN \`groups\` g ON gm.group_id = g.id
         WHERE ts.teacher_id = ?
         ORDER BY u.first_name, u.last_name
       `, [teacherRecordId])
