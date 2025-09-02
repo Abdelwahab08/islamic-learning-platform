@@ -44,23 +44,21 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Get all lessons for this teacher - JOIN with groups to get group names
+    // Get all lessons for this teacher - SIMPLIFIED VERSION
     try {
-      const lessonsQuery = `
+      const simpleQuery = `
         SELECT 
-          l.id,
-          l.day_of_week,
-          l.start_time,
-          l.subject,
-          l.duration_minutes,
-          l.room,
-          l.group_id,
-          COALESCE(g.name, 'غير محدد') as group_name
-        FROM lessons l
-        LEFT JOIN \`groups\` g ON l.group_id = g.id
-        WHERE l.teacher_id = ?
+          id,
+          day_of_week,
+          start_time,
+          subject,
+          duration_minutes,
+          room,
+          group_id
+        FROM lessons 
+        WHERE teacher_id = ?
         ORDER BY 
-          CASE l.day_of_week
+          CASE day_of_week
             WHEN 'monday' THEN 1
             WHEN 'tuesday' THEN 2
             WHEN 'wednesday' THEN 3
@@ -69,18 +67,18 @@ export async function GET(request: NextRequest) {
             WHEN 'saturday' THEN 6
             WHEN 'sunday' THEN 7
           END,
-          l.start_time
+          start_time
       `
 
-      const lessons = await executeQuery(lessonsQuery, [teacherRecordId])
-      console.log('🔍 Lessons with group names:', lessons)
+      const lessons = await executeQuery(simpleQuery, [teacherRecordId])
+      console.log('🔍 Simple query lessons:', lessons)
 
       const transformedLessons = lessons.map((lesson: any) => ({
         id: lesson.id,
         day: lesson.day_of_week,
         time: lesson.start_time,
         subject: lesson.subject,
-        group_name: lesson.group_name,
+        group_name: lesson.group_id ? `المجموعة ${lesson.group_id}` : 'غير محدد',
         duration: lesson.duration_minutes,
         room: lesson.room
       }))
