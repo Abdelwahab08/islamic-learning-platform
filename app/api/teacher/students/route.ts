@@ -48,9 +48,10 @@ export async function GET(request: NextRequest) {
     // Get students assigned to this teacher
     let students: Student[] = []
     try {
-      console.log('Querying students for teacher ID:', teacherRecordId)
+      console.log('Querying students for teacher email:', user.email)
       
-      // Simplified query to avoid complex JOINs that might fail
+      // Since there's a mismatch between teacher user IDs and teacher record IDs,
+      // filter by the teacher's email instead
       const studentsResult = await executeQuery(`
         SELECT 
           s.id,
@@ -71,9 +72,11 @@ export async function GET(request: NextRequest) {
         JOIN students s ON ts.student_id = s.id
         JOIN users u ON s.user_id = u.id
         LEFT JOIN stages st ON s.stage_id = st.id
-        WHERE ts.teacher_id = ?
+        JOIN teachers t ON ts.teacher_id = t.id
+        JOIN users teacher_user ON t.user_id = teacher_user.id
+        WHERE teacher_user.email = ?
         ORDER BY u.first_name, u.last_name
-      `, [teacherRecordId])
+      `, [user.email])
       
       console.log(`Found ${studentsResult.length} students for teacher`)
       
