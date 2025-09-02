@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     ]
 
     for (const file of specificFiles) {
-      const fileLocations = {}
+      const fileLocations: Record<string, string> = {}
       for (const dir of directoriesToCheck) {
         const fullPath = path.join(rootDir, dir, file)
         try {
