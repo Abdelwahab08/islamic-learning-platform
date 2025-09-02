@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       FROM materials m
       JOIN teachers t ON m.teacher_id = t.id
       JOIN users u ON t.user_id = u.id
-      LEFT JOIN stages st ON m.level_stage_id = st.id
+      LEFT JOIN stages st ON m.stage_id = st.id
       WHERE m.teacher_id = ?
       ORDER BY m.created_at DESC
     `, [teacherRecordId])
@@ -58,10 +58,8 @@ export async function POST(request: NextRequest) {
     // Handle FormData instead of JSON
     const formData = await request.formData()
     const title = formData.get('title') as string
-    const description = formData.get('description') as string
     const kind = formData.get('kind') as string
     const file = formData.get('file') as File
-    const group_id = formData.get('group_id') as string
     const stage_id = formData.get('stage_id') as string
 
     if (!title) {
@@ -72,22 +70,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'الملف مطلوب' }, { status: 400 })
     }
 
+    if (!stage_id) {
+      return NextResponse.json({ error: 'المرحلة مطلوبة' }, { status: 400 })
+    }
+
     // For now, just save the file info to database
     // In a real app, you'd upload the file to storage and save the URL
     const materialId = uuidv4()
     const fileUrl = `/uploads/${file.name}` // Placeholder URL
     
     await executeQuery(`
-      INSERT INTO materials (id, teacher_id, title, description, kind, file_url, level_stage_id, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+      INSERT INTO materials (id, teacher_id, title, kind, file_url, stage_id, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, NOW())
     `, [
       materialId,
       teacherRecordId,
       title,
-      description || '',
       kind || 'PDF',
       fileUrl,
-      stage_id || null
+      stage_id
     ])
 
     // Get the created material
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest) {
       FROM materials m
       JOIN teachers t ON m.teacher_id = t.id
       JOIN users u ON t.user_id = u.id
-      LEFT JOIN stages st ON m.level_stage_id = st.id
+      LEFT JOIN stages st ON m.stage_id = st.id
       WHERE m.id = ?
     `, [materialId])
 
