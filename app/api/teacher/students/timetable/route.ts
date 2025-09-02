@@ -94,6 +94,7 @@ export async function GET(request: NextRequest) {
 
       const entriesParams = [from, to, ...students.map((s: any) => s.id), teacherId]
       console.log('Fetching entries with params:', { from, to, teacherId, studentIds: students.map((s: any) => s.id) })
+      console.log('DEBUG: Teacher ID being used:', teacherId)
       
       entries = await executeQuery(entriesQuery, entriesParams)
       console.log('Found entries:', entries)
