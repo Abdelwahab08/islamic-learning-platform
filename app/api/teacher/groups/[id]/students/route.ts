@@ -21,13 +21,12 @@ export async function GET(
         s.id,
         s.user_id,
         u.email,
-        COALESCE(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')), u.email) as name,
-        gm.created_at as joined_at
+        COALESCE(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')), u.email) as name
       FROM group_members gm
       JOIN students s ON gm.student_id = s.id
       JOIN users u ON s.user_id = u.id
       WHERE gm.group_id = ?
-      ORDER BY gm.created_at DESC
+      ORDER BY gm.id DESC
     `, [params.id])
 
     return NextResponse.json({ students })
@@ -99,14 +98,14 @@ export async function POST(
     )
 
     if (currentStudents[0].count >= group.max_students) {
-      return NextResponse.json({ error: 'المجموعة ممتلئة' }, { status: 400 })
+      return NextResponse.json({ error: 'المجموعة ممتلئة' }, { status: 500 })
     }
 
-    // Add student to group
+    // Add student to group - removed created_at since it doesn't exist in schema
     const groupMemberId = uuidv4()
     await executeUpdate(`
-      INSERT INTO group_members (id, group_id, student_id, created_at)
-      VALUES (?, ?, ?, NOW())
+      INSERT INTO group_members (id, group_id, student_id)
+      VALUES (?, ?, ?)
     `, [groupMemberId, params.id, student_id])
 
     return NextResponse.json({
