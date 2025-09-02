@@ -48,10 +48,9 @@ export async function GET(request: NextRequest) {
     // Get students assigned to this teacher
     let students: Student[] = []
     try {
-      console.log('Querying students for teacher email:', user.email)
+      console.log('Querying students for teacher ID:', teacherRecordId)
       
-      // Since there's a mismatch between teacher user IDs and teacher record IDs,
-      // filter by the teacher's email instead
+      // Use the same approach as weekly progress API
       const studentsResult = await executeQuery(`
         SELECT 
           s.id,
@@ -72,11 +71,9 @@ export async function GET(request: NextRequest) {
         JOIN students s ON ts.student_id = s.id
         JOIN users u ON s.user_id = u.id
         LEFT JOIN stages st ON s.stage_id = st.id
-        JOIN teachers t ON ts.teacher_id = t.id
-        JOIN users teacher_user ON t.user_id = teacher_user.id
-        WHERE teacher_user.email = ?
+        WHERE ts.teacher_id = ?
         ORDER BY u.first_name, u.last_name
-      `, [user.email])
+      `, [teacherRecordId])
       
       console.log(`Found ${studentsResult.length} students for teacher`)
       
