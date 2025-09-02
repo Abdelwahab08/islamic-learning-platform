@@ -42,7 +42,7 @@ export async function GET(
         s.id,
         s.user_id,
         u.email,
-        CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as name,
+        COALESCE(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')), u.email) as name,
         gm.created_at as joined_at
       FROM group_members gm
       JOIN students s ON gm.student_id = s.id
@@ -134,10 +134,11 @@ export async function POST(
     }
 
     // Add student to group
+    const groupMemberId = uuidv4()
     await executeUpdate(`
       INSERT INTO group_members (id, group_id, student_id, created_at)
-      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-    `, [uuidv4(), params.id, student_id])
+      VALUES (?, ?, ?, NOW())
+    `, [groupMemberId, params.id, student_id])
 
     return NextResponse.json({
       message: 'تم إضافة الطالب للمجموعة بنجاح'
