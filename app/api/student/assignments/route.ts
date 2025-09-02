@@ -35,6 +35,7 @@ export async function GET() {
           a.id,
           a.title,
           a.description,
+          a.due_at,
           a.created_at,
           'teacher@test.com' AS teacher_email,
           'معلم تجريبي' AS teacher_name,
@@ -57,7 +58,7 @@ export async function GET() {
       id: assignment.id,
       title: assignment.title,
       description: assignment.description,
-      dueDate: null, // No due date in current schema
+      dueDate: assignment.due_at, // Use actual due date from database
       createdAt: assignment.created_at,
       status: assignment.submission_id ? 'SUBMITTED' : 'PENDING',
       teacherName: assignment.teacher_name?.trim() || 'غير محدد',
