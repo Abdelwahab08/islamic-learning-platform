@@ -136,7 +136,7 @@ export async function generateCertificatePDF(data: CertificateData): Promise<Buf
         .content-container {
             position: relative;
             z-index: 3;
-            padding: 30px 60px;
+            padding: 25px 50px;
             height: 100%;
             display: flex;
             flex-direction: column;
@@ -146,25 +146,25 @@ export async function generateCertificatePDF(data: CertificateData): Promise<Buf
         /* Header section - smaller */
         .header {
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
 
         .bismillah {
             font-family: 'Amiri', serif;
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
             color: #1e40af;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
             letter-spacing: 2px;
         }
         
         .platform-header {
             font-family: 'Amiri', serif;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             color: #1a4d1f;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             text-align: center;
             background: linear-gradient(135deg, #2c5530, #1a4d1f);
             -webkit-background-clip: text;
@@ -174,10 +174,10 @@ export async function generateCertificatePDF(data: CertificateData): Promise<Buf
         }
 
         .title {
-            font-size: 30px;
+            font-size: 26px;
             font-weight: 900;
             color: #1e40af;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
         }
 
@@ -196,47 +196,47 @@ export async function generateCertificatePDF(data: CertificateData): Promise<Buf
             display: flex;
             flex-direction: column;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .stage-name {
-            font-size: 26px;
+            font-size: 22px;
             font-weight: 900;
             color: #1e40af;
-            margin: 8px 0;
-            padding: 12px 25px;
+            margin: 6px 0;
+            padding: 10px 20px;
             background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
             border: 2px solid #1e40af;
-            border-radius: 12px;
+            border-radius: 10px;
             display: inline-block;
             box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
         }
 
         .status-badge {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             color: #059669;
             background: #ecfdf5;
             border: 2px solid #059669;
-            padding: 10px 20px;
-            border-radius: 10px;
-            margin: 10px 0;
+            padding: 8px 16px;
+            border-radius: 8px;
+            margin: 8px 0;
             display: inline-block;
         }
 
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin: 15px 0;
+            gap: 16px;
+            margin: 12px 0;
             text-align: right;
         }
 
         .info-item {
             background: #f8fafc;
             border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 12px;
+            border-radius: 8px;
+            padding: 10px;
             box-shadow: 0 3px 8px rgba(0,0,0,0.1);
         }
 
@@ -290,7 +290,7 @@ export async function generateCertificatePDF(data: CertificateData): Promise<Buf
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            margin-top: 25px;
+            margin-top: 20px;
         }
 
         .signature-section {
@@ -436,15 +436,15 @@ export async function generateCertificatePDF(data: CertificateData): Promise<Buf
         }
         
         .watermark-symbol {
-            font-size: 120px;
-            color: rgba(30, 64, 175, 0.03);
-            margin-bottom: 10px;
+            font-size: 80px;
+            color: rgba(30, 64, 175, 0.05);
+            margin-bottom: 8px;
         }
         
         .watermark-text {
             font-family: 'Amiri', serif;
-            font-size: 24px;
-            color: rgba(30, 64, 175, 0.04);
+            font-size: 18px;
+            color: rgba(30, 64, 175, 0.06);
             font-weight: bold;
             text-align: center;
         }
