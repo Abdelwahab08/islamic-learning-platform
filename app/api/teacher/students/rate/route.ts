@@ -47,10 +47,10 @@ export async function POST(request: NextRequest) {
 
     let result
     if (existingRating.length > 0) {
-      // Update existing rating
+      // Update existing rating - keep the same created_at date but update other fields
       await executeQuery(
         `UPDATE progress_logs 
-         SET rating = ?, page_number = ?, notes = ?, created_at = NOW()
+         SET rating = ?, page_number = ?, notes = ?
          WHERE student_id = ? AND DATE(created_at) = ?`,
         [rating, page_number, notes, student_id, date]
       )
@@ -60,13 +60,15 @@ export async function POST(request: NextRequest) {
         [student_id, date]
       )
     } else {
-      // Insert new rating
+      // Insert new rating with the specific date at noon to avoid timezone issues
       const ratingId = uuidv4()
+      const dateTime = `${date} 12:00:00`
+      
       await executeQuery(
         `INSERT INTO progress_logs 
          (id, student_id, teacher_id, stage_id, page_number, rating, notes, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-        [ratingId, student_id, teacherRecordId, stage_id, page_number, rating, notes]
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [ratingId, student_id, teacherRecordId, stage_id, page_number, rating, notes, dateTime]
       )
       
       result = await executeQuery(
