@@ -122,6 +122,8 @@ export async function GET(request: NextRequest) {
     })
 
     console.log('Final entries map:', entriesMap)
+    console.log('Student IDs from students:', students.map(s => s.id))
+    console.log('Student IDs from entries:', [...new Set(entries.map(e => e.student_id))])
     console.log('Returning data structure:', { 
       days: days.length, 
       studentsCount: students.length, 
