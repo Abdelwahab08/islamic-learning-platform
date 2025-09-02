@@ -54,14 +54,25 @@ export async function GET(
     // Parse file_url to get filename and path
     let filename = 'sample-material.pdf' // default
     let filePath = ''
+    let isExternalUrl = false
     
     try {
       if (material.file_url) {
-        // Handle both JSON array and string formats
-        if (material.file_url.startsWith('[')) {
+        // Check if it's an external URL
+        if (material.file_url.startsWith('http://') || material.file_url.startsWith('https://')) {
+          isExternalUrl = true
+          filename = material.file_url.split('/').pop() || 'external-file'
+        } else if (material.file_url.startsWith('[')) {
+          // Handle JSON array format
           const fileUrls = JSON.parse(material.file_url)
           if (Array.isArray(fileUrls) && fileUrls.length > 0) {
-            filename = fileUrls[0]
+            const firstUrl = fileUrls[0]
+            if (firstUrl.startsWith('http://') || firstUrl.startsWith('https://')) {
+              isExternalUrl = true
+              filename = firstUrl.split('/').pop() || 'external-file'
+            } else {
+              filename = firstUrl
+            }
           }
         } else {
           // Handle direct string path like "/materials/file.pdf"
@@ -70,6 +81,11 @@ export async function GET(
       }
     } catch (error) {
       console.error('Error parsing file_url:', error)
+    }
+
+    // If it's an external URL, redirect to it
+    if (isExternalUrl) {
+      return NextResponse.redirect(material.file_url)
     }
 
     // Try to construct file path - handle multiple possible locations

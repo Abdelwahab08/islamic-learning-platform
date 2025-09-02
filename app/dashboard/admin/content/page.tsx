@@ -211,6 +211,17 @@ export default function AdminContentPage() {
             إضافة محتوى جديد
           </Button>
         </div>
+        
+        {/* Railway Notice */}
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+          <div className="flex items-center">
+            <div className="text-yellow-800 text-sm">
+              <strong>ملاحظة مهمة:</strong> في بيئة Railway، الملفات المحلية لا تُحفظ بشكل دائم. 
+              للحصول على تحميل صحيح، يرجى استخدام روابط خارجية (Google Drive، Dropbox، إلخ) 
+              أو التواصل مع الإدارة لإعادة رفع الملفات.
+            </div>
+          </div>
+        </div>
 
         <div className="relative">
           <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
