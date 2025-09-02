@@ -75,6 +75,79 @@ export async function GET() {
       console.log('Error getting material count:', error?.message || error);
     }
 
+    // Get student's current stage and progress
+    let currentStage = 'غير محدد';
+    let currentPage = 0;
+    let totalPages = 0;
+    let pendingAssignments = 0;
+    let hasStarted = false;
+
+    try {
+      const [stageResult] = await executeQuery(`
+        SELECT 
+          s.name_ar as stage_name,
+          st.current_page,
+          s.total_pages,
+          st.current_stage_id
+        FROM students st
+        LEFT JOIN stages s ON st.current_stage_id = s.id
+        WHERE st.user_id = ?
+      `, [user.id]);
+      
+      if (stageResult && stageResult.current_stage_id) {
+        // Student has been assigned to a stage
+        hasStarted = true;
+        currentStage = stageResult.stage_name || 'مرحلة جديدة';
+        currentPage = stageResult.current_page || 1;
+        totalPages = stageResult.total_pages || 1;
+      } else {
+        // Student hasn't started yet - assign them to the first stage
+        hasStarted = false;
+        currentStage = 'لم تبدأ بعد';
+        currentPage = 0;
+        totalPages = 0;
+      }
+    } catch (error: any) {
+      console.log('Error getting stage info:', error?.message || error);
+    }
+
+    // If student hasn't started, offer to assign them to the first stage
+    if (!hasStarted) {
+      try {
+        const [firstStage] = await executeQuery(
+          'SELECT id, name_ar, total_pages FROM stages ORDER BY order_index LIMIT 1'
+        );
+        
+        if (firstStage) {
+          // Update the student to start with the first stage
+          await executeQuery(
+            'UPDATE students SET current_stage_id = ?, current_page = 1 WHERE user_id = ?',
+            [firstStage.id, user.id]
+          );
+          
+          // Update our local variables
+          currentStage = firstStage.name_ar;
+          currentPage = 1;
+          totalPages = firstStage.total_pages;
+          hasStarted = true;
+        }
+      } catch (error: any) {
+        console.log('Error assigning student to first stage:', error?.message || error);
+      }
+    }
+
+    try {
+      const [pendingResult] = await executeQuery(`
+        SELECT COUNT(*) as count 
+        FROM assignment_targets 
+        WHERE student_id = ? AND status = 'PENDING'
+      `, [studentId]);
+      
+      pendingAssignments = pendingResult.count || 0;
+    } catch (error: any) {
+      console.log('Error getting pending assignments:', error?.message || error);
+    }
+
     const stats = {
       totalCertificates: certificateCount.count,
       totalAssignments: assignmentCount.count,
@@ -83,7 +156,12 @@ export async function GET() {
       completedAssignments: Math.floor(assignmentCount.count * 0.7), // Mock data
       upcomingMeetings: Math.min(meetingCount.count, 3), // Mock data
       averageGrade: 'ممتاز', // Mock data
-      progressPercentage: 75 // Mock data
+      progressPercentage: 75, // Mock data
+      // Add the missing progress data
+      currentStage: currentStage,
+      currentPage: currentPage,
+      totalPages: totalPages,
+      pendingAssignments: pendingAssignments
     }
 
     return NextResponse.json(stats)
