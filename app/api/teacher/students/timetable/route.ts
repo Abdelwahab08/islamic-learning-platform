@@ -110,6 +110,14 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    console.log('Final entries map:', entriesMap)
+    console.log('Returning data structure:', { 
+      days: days.length, 
+      studentsCount: students.length, 
+      entriesCount: Object.keys(entriesMap).length,
+      sampleEntries: Object.keys(entriesMap).slice(0, 3)
+    })
+
     return NextResponse.json({
       days,
       students,

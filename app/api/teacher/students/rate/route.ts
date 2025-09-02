@@ -32,6 +32,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { student_id, date, stage_id, page_number, rating, notes } = body
 
+    console.log('Rating submission data:', { student_id, date, stage_id, page_number, rating, notes })
+
     if (!student_id || !date || !rating) {
       return NextResponse.json(
         { error: 'جميع الحقول مطلوبة' },
