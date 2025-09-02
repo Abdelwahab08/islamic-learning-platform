@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth-server'
+import { executeQuery } from '@/lib/db'
 import { v4 as uuidv4 } from 'uuid'
 
 export async function GET(request: NextRequest) {
@@ -10,35 +11,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
     }
 
-    // Return mock data to ensure dashboard works
-    const mockMaterials = [
-      {
-        id: 'mock-material-1',
-        title: 'سورة الفاتحة - أحكام التجويد',
-        file_url: '/uploads/materials/surah-fatiha.pdf',
-        created_at: '2025-01-15T10:00:00.000Z',
-        teacher_email: user.email,
-        stage_name: 'إتقان لغتي (الرشيدي)'
-      },
-      {
-        id: 'mock-material-2',
-        title: 'قواعد القراءة الصحيحة',
-        file_url: '/uploads/materials/reading-rules.pdf',
-        created_at: '2025-01-14T14:00:00.000Z',
-        teacher_email: user.email,
-        stage_name: 'إتقان لغتي (الرشيدي)'
-      },
-      {
-        id: 'mock-material-3',
-        title: 'أحكام النون الساكنة والتنوين',
-        file_url: '/uploads/materials/nun-rules.pdf',
-        created_at: '2025-01-13T09:00:00.000Z',
-        teacher_email: user.email,
-        stage_name: 'إتقان لغتي (الرشيدي)'
-      }
-    ]
+    // Get teacher record ID
+    const teachers = await executeQuery('SELECT id FROM teachers WHERE user_id = ?', [user.id])
+    if (teachers.length === 0) {
+      return NextResponse.json({ materials: [] })
+    }
+    const teacherRecordId = teachers[0].id
 
-    return NextResponse.json({ materials: mockMaterials })
+    // Get real materials from database
+    const materials = await executeQuery(`
+      SELECT 
+        m.*,
+        u.email as teacher_email,
+        COALESCE(st.name_ar, 'عام') as stage_name
+      FROM materials m
+      JOIN teachers t ON m.teacher_id = t.id
+      JOIN users u ON t.user_id = u.id
+      LEFT JOIN stages st ON m.level_stage_id = st.id
+      WHERE m.teacher_id = ?
+      ORDER BY m.created_at DESC
+    `, [teacherRecordId])
+
+    return NextResponse.json({ materials })
 
   } catch (error) {
     console.error('Error fetching teacher materials:', error)
@@ -54,6 +48,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
     }
 
+    // Get teacher record ID
+    const teachers = await executeQuery('SELECT id FROM teachers WHERE user_id = ?', [user.id])
+    if (teachers.length === 0) {
+      return NextResponse.json({ error: 'لم يتم العثور على المدرس' }, { status: 404 })
+    }
+    const teacherRecordId = teachers[0].id
+
     const body = await request.json()
     const { title, description, type, content, file_url, stage_id } = body
 
@@ -61,21 +62,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'عنوان المادة مطلوب' }, { status: 400 })
     }
 
-    // For now, just return success without saving to database
-    // This ensures the API works while we fix the underlying issues
+    // Save to database
     const materialId = uuidv4()
-    
+    await executeQuery(`
+      INSERT INTO materials (id, teacher_id, title, description, type, content, file_url, level_stage_id, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    `, [
+      materialId,
+      teacherRecordId,
+      title,
+      description || '',
+      type || 'document',
+      content || '',
+      file_url || '',
+      stage_id || null
+    ])
+
+    // Get the created material
+    const createdMaterial = await executeQuery(`
+      SELECT 
+        m.*,
+        u.email as teacher_email,
+        COALESCE(st.name_ar, 'عام') as stage_name
+      FROM materials m
+      JOIN teachers t ON m.teacher_id = t.id
+      JOIN users u ON t.user_id = u.id
+      LEFT JOIN stages st ON m.level_stage_id = st.id
+      WHERE m.id = ?
+    `, [materialId])
+
     return NextResponse.json({
       message: 'تم إضافة المادة التعليمية بنجاح',
-      material: {
-        id: materialId,
-        title,
-        description: description || '',
-        type: type || 'document',
-        content: content || '',
-        file_url: file_url || '',
-        created_at: new Date().toISOString()
-      }
+      material: createdMaterial[0]
     })
 
   } catch (error) {
