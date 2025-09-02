@@ -45,7 +45,8 @@ export async function GET(request: NextRequest) {
         debugInfo.existingFiles[dir] = files
         debugInfo.possibleFileLocations.push(dir)
       } catch (error) {
-        debugInfo.existingFiles[dir] = `Directory not found: ${error.message}`
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        debugInfo.existingFiles[dir] = `Directory not found: ${errorMessage}`
       }
     }
 
