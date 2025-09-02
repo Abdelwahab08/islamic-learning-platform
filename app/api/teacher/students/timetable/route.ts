@@ -64,14 +64,15 @@ export async function GET(request: NextRequest) {
       studentsQuery += `
         AND s.id IN (
           SELECT student_id
-          FROM group_students
+          FROM group_members
           WHERE group_id = ?
         )
       `
       queryParams.push(group_id)
     }
 
-    studentsQuery += ' ORDER BY u.first_name, u.last_name'
+    // Fix: Order by the 'name' alias instead of raw column names (DISTINCT requirement)
+    studentsQuery += ' ORDER BY name'
 
     const students = await executeQuery(studentsQuery, queryParams)
 
