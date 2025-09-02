@@ -142,6 +142,22 @@ export async function GET(request: NextRequest) {
         return NextResponse.json([]);
       }
 
+      // Check if this teacher has any materials
+      try {
+        const hasMaterials = await executeQuery(
+          'SELECT COUNT(*) as count FROM materials WHERE teacher_id = ?',
+          [teacherRecordId]
+        );
+        
+        if (hasMaterials[0]?.count === 0) {
+          console.log('No materials found for teacher:', teacherRecordId);
+          return NextResponse.json([]);
+        }
+      } catch (error) {
+        console.error('Error checking materials count:', error);
+        return NextResponse.json([]);
+      }
+
       query = `
         SELECT 
           m.*,

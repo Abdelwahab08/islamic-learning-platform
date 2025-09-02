@@ -177,6 +177,22 @@ export async function GET(request: NextRequest) {
         return NextResponse.json([]);
       }
 
+      // Check if this teacher has any meetings
+      try {
+        const hasMeetings = await executeQuery(
+          'SELECT COUNT(*) as count FROM meetings WHERE teacher_id = ?',
+          [teacherRecordId]
+        );
+        
+        if (hasMeetings[0]?.count === 0) {
+          console.log('No meetings found for teacher:', teacherRecordId);
+          return NextResponse.json([]);
+        }
+      } catch (error) {
+        console.error('Error checking meetings count:', error);
+        return NextResponse.json([]);
+      }
+
       query = `
         SELECT 
           m.*,
