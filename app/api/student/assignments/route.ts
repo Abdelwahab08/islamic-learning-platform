@@ -26,7 +26,7 @@ export async function GET() {
 
     const studentId = student[0].id
 
-    // Get assignments - simplified query with error handling
+    // Get assignments - ONLY from assigned teacher
     let assignments = [];
     
     try {
@@ -37,15 +37,18 @@ export async function GET() {
           a.description,
           a.due_at,
           a.created_at,
-          'teacher@test.com' AS teacher_email,
-          'معلم تجريبي' AS teacher_name,
+          COALESCE(u.email, 'teacher@test.com') AS teacher_email,
+          CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) AS teacher_name,
           NULL AS submission_id
         FROM assignments a
         JOIN assignment_targets at ON at.assignment_id = a.id
-        WHERE at.student_id = ?
+        JOIN teachers t ON a.teacher_id = t.id
+        JOIN users u ON t.user_id = u.id
+        JOIN teacher_students ts ON t.id = ts.teacher_id
+        WHERE at.student_id = ? AND ts.student_id = ?
         ORDER BY a.created_at DESC
         LIMIT 10
-      `, [studentId]);
+      `, [studentId, studentId]);
       
       assignments = result;
     } catch (error: any) {

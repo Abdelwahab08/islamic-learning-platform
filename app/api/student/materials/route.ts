@@ -26,7 +26,7 @@ export async function GET() {
 
     const studentId = student[0].id
 
-    // Get materials - simplified query with error handling
+    // Get materials - ONLY from assigned teacher
     let materials = [];
     
     try {
@@ -36,12 +36,17 @@ export async function GET() {
           m.title,
           m.file_url as fileUrl,
           m.created_at,
-          'teacher@test.com' as teacherEmail,
-          'المرحلة المتوسطة' as stageName
+          CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as teacherEmail,
+          COALESCE(s.name_ar, 'المرحلة المتوسطة') as stageName
         FROM materials m
+        JOIN teachers t ON m.teacher_id = t.id
+        JOIN users u ON t.user_id = u.id
+        JOIN teacher_students ts ON t.id = ts.teacher_id
+        LEFT JOIN stages s ON m.stage_id = s.id
+        WHERE ts.student_id = ?
         ORDER BY m.created_at DESC
         LIMIT 10
-      `);
+      `, [studentId]);
       
       materials = result;
     } catch (error: any) {

@@ -30,33 +30,47 @@ export async function GET(request: NextRequest) {
     const teacherId = user.id
     console.log('Getting students for teacher user ID:', teacherId)
 
-    // Get students assigned to this teacher
+    // Get teacher record ID from teachers table
+    const teacherRecord = await executeQuery('SELECT id FROM teachers WHERE user_id = ?', [user.id])
+    
+    if (teacherRecord.length === 0) {
+      return NextResponse.json({ error: 'لم يتم العثور على بيانات المعلم' }, { status: 404 })
+    }
+
+    const teacherDbId = teacherRecord[0].id
+    console.log('Teacher DB ID:', teacherDbId)
+
+    // Get students assigned to this teacher ONLY
     let students: Student[] = []
     try {
-      console.log('Querying students for teacher email:', user.email)
+      console.log('Querying students for teacher DB ID:', teacherDbId)
       
-      // Since we know there's 1 student from weekly progress, return mock data to ensure dashboard works
-      const mockStudents = [
-        {
-          id: 'student-profile-1756745622686',
-          name: 'طالب تجريبي',
-          email: 'student@test.com',
-          phone: 'غير محدد',
-          join_date: '2025-01-01T00:00:00.000Z',
-          current_stage: 'إتقان لغتي (الرشيدي)',
-          progress_percentage: 34,
-          total_assignments: 0,
-          completed_assignments: 0,
-          certificates_count: 0,
-          last_activity: '2025-01-15T00:00:00.000Z',
-          status: 'active' as const,
-          group_name: 'غير محدد',
-          teacher_notes: ''
-        }
-      ]
+      const result = await executeQuery(`
+        SELECT DISTINCT
+          s.id,
+          CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as name,
+          u.email,
+          u.phone,
+          s.created_at as join_date,
+          COALESCE(st.name_ar, 'غير محدد') as current_stage,
+          COALESCE(s.current_page, 0) as progress_percentage,
+          (SELECT COUNT(*) FROM assignment_targets at WHERE at.student_id = s.id) as total_assignments,
+          0 as completed_assignments,
+          (SELECT COUNT(*) FROM certificates c WHERE c.student_id = s.id) as certificates_count,
+          s.updated_at as last_activity,
+          'active' as status,
+          'غير محدد' as group_name,
+          '' as teacher_notes
+        FROM teacher_students ts
+        JOIN students s ON ts.student_id = s.id
+        JOIN users u ON s.user_id = u.id
+        LEFT JOIN stages st ON s.current_stage_id = st.id
+        WHERE ts.teacher_id = ?
+        ORDER BY s.created_at DESC
+      `, [teacherDbId])
       
-      students = mockStudents
-      console.log(`Found ${students.length} students for teacher`)
+      students = result
+      console.log(`Found ${students.length} students assigned to teacher ${user.email}`)
       
     } catch (error) {
       console.log('Error getting students:', error)
