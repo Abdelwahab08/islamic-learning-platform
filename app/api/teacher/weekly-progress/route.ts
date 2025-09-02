@@ -64,10 +64,14 @@ export async function GET(request: NextRequest) {
         FROM teacher_students ts
         JOIN students s ON ts.student_id = s.id
         JOIN users u ON s.user_id = u.id
-        LEFT JOIN stages st ON s.stage_id = st.id
-        WHERE ts.teacher_id = ?
+        LEFT JOIN stages st ON s.current_stage_id = st.id
+        WHERE (
+          ts.teacher_id = ?
+          OR ts.teacher_id IN (SELECT id FROM teachers WHERE user_id = ?)
+          OR ts.teacher_id = ?
+        )
         ORDER BY u.first_name, u.last_name
-      `, [teacherRecordId])
+      `, [teacherRecordId, user.id, user.id])
       
       weeklyProgress = progressResult.map((student: any) => {
         const currentPage = student.current_page || 1

@@ -105,9 +105,13 @@ export async function GET(request: NextRequest) {
         JOIN students s ON ts.student_id = s.id
         JOIN users u ON s.user_id = u.id
         LEFT JOIN stages st ON s.current_stage_id = st.id
-        WHERE ts.teacher_id = ?
+        WHERE (
+          ts.teacher_id = ?
+          OR ts.teacher_id IN (SELECT id FROM teachers WHERE user_id = ?)
+          OR ts.teacher_id = ?
+        )
         ORDER BY s.created_at DESC
-      `, [teacherDbId])
+      `, [teacherDbId, user.id, user.id])
       
       students = result
       console.log(`🔍 DEBUG: Found ${students.length} students assigned to teacher ${user.email}`)

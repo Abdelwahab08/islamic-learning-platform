@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth-server'
+import { executeQuery } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,97 +10,86 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
     }
 
-    // Return guaranteed working data for the dashboard
-    const dashboardData = {
-      weeklyProgress: [
-        {
-          studentId: 'student-profile-1756745622686',
-          studentName: 'طالب تجريبي',
-          studentEmail: 'student@test.com',
-          stageName: 'إتقان لغتي (الرشيدي)',
-          currentPage: 15,
-          totalPages: 44,
-          progressPercentage: 34,
-          assignmentsCompleted: 0,
-          certificatesEarned: 0
-        }
-      ],
-      meetings: [
-        {
-          id: 'mock-meeting-1',
-          title: 'درس القرآن - سورة الفاتحة',
-          scheduled_at: '2025-01-20T10:00:00.000Z',
-          duration_minutes: 60,
-          status: 'scheduled',
-          teacher_name: user.email,
-          stage_name: 'إتقان لغتي (الرشيدي)'
-        },
-        {
-          id: 'mock-meeting-2',
-          title: 'مراجعة أحكام التجويد',
-          scheduled_at: '2025-01-21T14:00:00.000Z',
-          duration_minutes: 45,
-          status: 'scheduled',
-          teacher_name: user.email,
-          stage_name: 'إتقان لغتي (الرشيدي)'
-        },
-        {
-          id: 'mock-meeting-3',
-          title: 'درس تفسير القرآن',
-          scheduled_at: '2025-01-22T09:00:00.000Z',
-          duration_minutes: 90,
-          status: 'scheduled',
-          teacher_name: user.email,
-          stage_name: 'إتقان لغتي (الرشيدي)'
-        }
-      ],
-      materials: [
-        {
-          id: 'mock-material-1',
-          title: 'سورة الفاتحة - أحكام التجويد',
-          file_url: '/uploads/materials/surah-fatiha.pdf',
-          created_at: '2025-01-15T10:00:00.000Z',
-          teacher_email: user.email,
-          stage_name: 'إتقان لغتي (الرشيدي)'
-        },
-        {
-          id: 'mock-material-2',
-          title: 'قواعد القراءة الصحيحة',
-          file_url: '/uploads/materials/reading-rules.pdf',
-          created_at: '2025-01-14T14:00:00.000Z',
-          teacher_email: user.email,
-          stage_name: 'إتقان لغتي (الرشيدي)'
-        },
-        {
-          id: 'mock-material-3',
-          title: 'أحكام النون الساكنة والتنوين',
-          file_url: '/uploads/materials/nun-rules.pdf',
-          created_at: '2025-01-13T09:00:00.000Z',
-          teacher_email: user.email,
-          stage_name: 'إتقان لغتي (الرشيدي)'
-        }
-      ],
-      students: [
-        {
-          id: 'student-profile-1756745622686',
-          name: 'طالب تجريبي',
-          email: 'student@test.com',
-          phone: 'غير محدد',
-          join_date: '2025-01-01T00:00:00.000Z',
-          current_stage: 'إتقان لغتي (الرشيدي)',
-          progress_percentage: 34,
-          total_assignments: 0,
-          completed_assignments: 0,
-          certificates_count: 0,
-          last_activity: '2025-01-15T00:00:00.000Z',
-          status: 'active',
-          group_name: 'غير محدد',
-          teacher_notes: ''
-        }
-      ]
+    // Get teacher record id
+    const teachers = await executeQuery('SELECT id FROM teachers WHERE user_id = ?', [user.id])
+    if (teachers.length === 0) {
+      return NextResponse.json({ weeklyProgress: [], meetings: [], materials: [], students: [] })
     }
+    const teacherRecordId = teachers[0].id
 
-    return NextResponse.json(dashboardData)
+    // Students
+    const students = await executeQuery(`
+      SELECT DISTINCT
+        s.id,
+        CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as name,
+        u.email,
+        COALESCE(u.phone, 'غير محدد') as phone,
+        s.created_at as join_date,
+        COALESCE(st.name_ar, 'غير محدد') as current_stage,
+        COALESCE(s.current_page, 0) as progress_percentage,
+        (SELECT COUNT(*) FROM assignment_targets at WHERE at.student_id = s.id) as total_assignments,
+        0 as completed_assignments,
+        (SELECT COUNT(*) FROM certificates c WHERE c.student_id = s.id) as certificates_count,
+        s.updated_at as last_activity,
+        'active' as status,
+        'غير محدد' as group_name,
+        '' as teacher_notes
+      FROM teacher_students ts
+      JOIN students s ON ts.student_id = s.id
+      JOIN users u ON s.user_id = u.id
+      LEFT JOIN stages st ON s.current_stage_id = st.id
+      WHERE (
+        ts.teacher_id = ?
+        OR ts.teacher_id IN (SELECT id FROM teachers WHERE user_id = ?)
+        OR ts.teacher_id = ?
+      )
+      ORDER BY s.created_at DESC
+    `, [teacherRecordId, user.id, user.id])
+
+    // Weekly progress (reuse students data shape)
+    const weeklyProgress = students.map((s: any) => ({
+      studentId: s.id,
+      studentName: s.name,
+      studentEmail: s.email,
+      stageName: s.current_stage,
+      currentPage: s.progress_percentage || 0,
+      totalPages:  s.total_pages || 0,
+      progressPercentage: s.progress_percentage || 0,
+      assignmentsCompleted: 0,
+      certificatesEarned: s.certificates_count || 0
+    }))
+
+    // Meetings (teacher-owned)
+    const meetings = await executeQuery(`
+      SELECT 
+        m.*,
+        u.email as teacher_name,
+        COALESCE(st.name_ar, 'عام') as stage_name
+      FROM meetings m
+      JOIN teachers t ON m.teacher_id = t.id
+      JOIN users u ON t.user_id = u.id
+      LEFT JOIN stages st ON m.level_stage_id = st.id
+      WHERE m.teacher_id = ?
+      ORDER BY m.scheduled_at DESC
+      LIMIT 10
+    `, [teacherRecordId])
+
+    // Materials (teacher-owned)
+    const materials = await executeQuery(`
+      SELECT 
+        m.*,
+        u.email as teacher_email,
+        COALESCE(st.name_ar, 'عام') as stage_name
+      FROM materials m
+      JOIN teachers t ON m.teacher_id = t.id
+      JOIN users u ON t.user_id = u.id
+      LEFT JOIN stages st ON m.stage_id = st.id
+      WHERE m.teacher_id = ?
+      ORDER BY m.created_at DESC
+      LIMIT 10
+    `, [teacherRecordId])
+
+    return NextResponse.json({ weeklyProgress, meetings, materials, students })
 
   } catch (error) {
     console.error('Error fetching dashboard data:', error)
