@@ -36,9 +36,20 @@ export async function POST(request: NextRequest) {
       }
       teacherRecordId = teachers[0].id
     } catch (error) {
-      console.log('Error getting teacher record:', error)
+      console.error('Error getting teacher record:', error)
       return NextResponse.json(
         { message: 'خطأ في قاعدة البيانات' },
+        { status: 500 }
+      )
+    }
+
+    // Check if materials table exists
+    try {
+      await executeQuery('SELECT 1 FROM materials LIMIT 1')
+    } catch (error) {
+      console.error('Materials table does not exist or has issues:', error)
+      return NextResponse.json(
+        { message: 'جدول المواد التعليمية غير متاح حالياً' },
         { status: 500 }
       )
     }
@@ -60,7 +71,7 @@ export async function POST(request: NextRequest) {
         materialId
       })
     } catch (error) {
-      console.log('Error creating material:', error)
+      console.error('Error creating material:', error)
       return NextResponse.json(
         { message: 'فشل في إضافة المادة التعليمية' },
         { status: 500 }
@@ -84,6 +95,14 @@ export async function GET(request: NextRequest) {
         { message: 'غير مصرح لك بالوصول إلى المواد التعليمية' },
         { status: 403 }
       )
+    }
+
+    // Check if materials table exists
+    try {
+      await executeQuery('SELECT 1 FROM materials LIMIT 1')
+    } catch (error) {
+      console.error('Materials table does not exist or has issues:', error)
+      return NextResponse.json([])
     }
 
     const { searchParams } = new URL(request.url)
@@ -156,7 +175,7 @@ export async function GET(request: NextRequest) {
       materials = await executeQuery(query, params)
       console.log(`Found ${materials.length} materials`)
     } catch (error) {
-      console.log('Error fetching materials:', error)
+      console.error('Error fetching materials:', error)
       // Return empty array if query fails
       materials = []
     }

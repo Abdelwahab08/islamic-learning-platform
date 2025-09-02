@@ -138,7 +138,7 @@ function makeRequest(url, method, data, authToken = '') {
     }
     
     if (data) {
-      options.body = JSON.stringify(data);
+      options.headers['body'] = JSON.stringify(data);
     }
     
     const req = https.request(url, options, (res) => {

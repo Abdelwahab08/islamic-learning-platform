@@ -35,54 +35,81 @@ export async function POST(request: NextRequest) {
     }
 
     // Get teacher ID
-    const teacher = await executeQuery(
-      'SELECT id FROM teachers WHERE user_id = ?',
-      [user.id]
-    );
+    let teacherId = null;
+    try {
+      const teacher = await executeQuery(
+        'SELECT id FROM teachers WHERE user_id = ?',
+        [user.id]
+      );
 
-    if (!teacher.length) {
+      if (!teacher.length) {
+        return NextResponse.json(
+          { message: 'لم يتم العثور على بيانات المعلم' },
+          { status: 404 }
+        );
+      }
+      teacherId = teacher[0].id;
+    } catch (error) {
+      console.error('Error getting teacher record:', error);
       return NextResponse.json(
-        { message: 'لم يتم العثور على بيانات المعلم' },
-        { status: 404 }
+        { message: 'خطأ في قاعدة البيانات' },
+        { status: 500 }
       );
     }
 
-    const teacherId = teacher[0].id;
+    // Check if meetings table exists and has required columns
+    try {
+      await executeQuery('SELECT 1 FROM meetings LIMIT 1');
+    } catch (error) {
+      console.error('Meetings table does not exist or has issues:', error);
+      return NextResponse.json(
+        { message: 'جدول الاجتماعات غير متاح حالياً' },
+        { status: 500 }
+      );
+    }
 
     // Create meeting
-    const meetingId = uuidv4();
-    await executeUpdate(`
-      INSERT INTO meetings (
-        id, teacher_id, title, scheduled_at, duration_minutes,
-        provider, level_stage_id, group_id, join_url, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'scheduled')
-    `, [
-      meetingId,
-      teacherId,
-      title,
-      `${scheduled_date} ${scheduled_time}`,
-      duration,
-      meeting_type || 'ZOOM',
-      target_type === 'STAGE' ? target_id : null,
-      target_type === 'GROUP' ? target_id : null,
-      meeting_link || null,
-    ]);
+    try {
+      const meetingId = uuidv4();
+      await executeUpdate(`
+        INSERT INTO meetings (
+          id, teacher_id, title, scheduled_at, duration_minutes,
+          provider, level_stage_id, group_id, join_url, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'scheduled')
+      `, [
+        meetingId,
+        teacherId,
+        title,
+        `${scheduled_date} ${scheduled_time}`,
+        duration,
+        meeting_type || 'ZOOM',
+        target_type === 'STAGE' ? target_id : null,
+        target_type === 'GROUP' ? target_id : null,
+        meeting_link || null,
+      ]);
 
-    // Get the created meeting
-    const createdMeeting = await executeQuery(`
-      SELECT 
-        m.*,
-        u.email as teacher_name
-      FROM meetings m
-      JOIN teachers t ON m.teacher_id = t.id
-      JOIN users u ON t.user_id = u.id
-      WHERE m.id = ?
-    `, [meetingId]);
+      // Get the created meeting
+      const createdMeeting = await executeQuery(`
+        SELECT 
+          m.*,
+          u.email as teacher_name
+        FROM meetings m
+        JOIN teachers t ON m.teacher_id = t.id
+        JOIN users u ON t.user_id = u.id
+        WHERE m.id = ?
+      `, [meetingId]);
 
-    return NextResponse.json({
-      message: 'تم إنشاء الاجتماع بنجاح',
-      meeting: createdMeeting[0]
-    });
+      return NextResponse.json({
+        message: 'تم إنشاء الاجتماع بنجاح',
+        meeting: createdMeeting[0]
+      });
+    } catch (error) {
+      console.error('Error creating meeting:', error);
+      return NextResponse.json(
+        { message: 'حدث خطأ في إنشاء الاجتماع' },
+        { status: 500 }
+      );
+    }
 
   } catch (error) {
     console.error('Meeting creation error:', error);
@@ -101,6 +128,14 @@ export async function GET(request: NextRequest) {
         { message: 'غير مصرح لك بالوصول إلى الاجتماعات' },
         { status: 403 }
       );
+    }
+
+    // Check if meetings table exists
+    try {
+      await executeQuery('SELECT 1 FROM meetings LIMIT 1');
+    } catch (error) {
+      console.error('Meetings table does not exist or has issues:', error);
+      return NextResponse.json([]);
     }
 
     const { searchParams } = new URL(request.url);
@@ -167,7 +202,7 @@ export async function GET(request: NextRequest) {
       meetings = await executeQuery(query, params);
       console.log(`Found ${meetings.length} meetings for user ${user.id}`);
     } catch (error) {
-      console.log('Error fetching meetings:', error);
+      console.error('Error fetching meetings:', error);
       // Return empty array if query fails
       meetings = [];
     }
@@ -177,7 +212,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching meetings:', error);
     return NextResponse.json(
-      { message: 'حدث خطأ في تحميل الاجتماعات' },
+      { message: 'فشل في تحميل الاجتماعات' },
       { status: 500 }
     );
   }
