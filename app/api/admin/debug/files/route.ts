@@ -14,7 +14,13 @@ export async function GET(request: NextRequest) {
     }
 
     const rootDir = process.cwd()
-    const debugInfo = {
+    const debugInfo: {
+      rootDirectory: string
+      currentWorkingDirectory: string
+      possibleFileLocations: string[]
+      existingFiles: Record<string, any>
+      fileSystemInfo: Record<string, any>
+    } = {
       rootDirectory: rootDir,
       currentWorkingDirectory: process.cwd(),
       possibleFileLocations: [],
