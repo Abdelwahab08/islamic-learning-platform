@@ -5,9 +5,11 @@ import { executeQuery } from '@/lib/db'
 interface Group {
   id: string
   name: string
-  stageId: string | null
-  stageName: string
-  studentCount: number
+  description: string
+  max_students: number
+  current_students: number
+  created_at: string
+  teacher_name: string
 }
 
 export async function GET(request: NextRequest) {
@@ -27,13 +29,13 @@ export async function GET(request: NextRequest) {
       const teachers = await executeQuery('SELECT id FROM teachers WHERE user_id = ?', [teacherId])
       if (teachers.length === 0) {
         console.log('No teacher record found for user:', teacherId)
-        return NextResponse.json([])
+        return NextResponse.json({ groups: [] })
       }
       teacherRecordId = teachers[0].id
       console.log('Found teacher record ID:', teacherRecordId)
     } catch (error) {
       console.log('Error getting teacher record:', error)
-      return NextResponse.json([])
+      return NextResponse.json({ groups: [] })
     }
 
     // Get groups for this teacher
@@ -41,23 +43,21 @@ export async function GET(request: NextRequest) {
     try {
       console.log('Querying groups for teacher ID:', teacherRecordId)
       
-      // Debug: Check all groups and their teachers
-      const allGroups = await executeQuery('SELECT g.*, t.user_id as teacher_user_id FROM `groups` g JOIN teachers t ON g.teacher_id = t.id')
-      console.log(`Total groups in database: ${allGroups.length}`)
-      allGroups.forEach(g => console.log(`  Group: ${g.name}, Teacher User ID: ${g.teacher_user_id}, Current User: ${teacherId}`))
-      
       const groupsResult = await executeQuery(`
         SELECT 
           g.id,
           g.name,
-          g.level_stage_id,
-          COALESCE(st.name_ar, 'عام') as stage_name,
-          COALESCE(COUNT(gm.student_id), 0) as student_count
+          COALESCE(g.description, '') as description,
+          COALESCE(g.max_students, 20) as max_students,
+          COALESCE(COUNT(gm.student_id), 0) as current_students,
+          g.created_at,
+          u.email as teacher_name
         FROM \`groups\` g
-        LEFT JOIN stages st ON g.level_stage_id = st.id
         LEFT JOIN \`group_members\` gm ON g.id = gm.group_id
+        LEFT JOIN teachers t ON g.teacher_id = t.id
+        LEFT JOIN users u ON t.user_id = u.id
         WHERE g.teacher_id = ?
-        GROUP BY g.id, g.name, g.level_stage_id, st.name_ar
+        GROUP BY g.id, g.name, g.description, g.max_students, g.created_at, u.email
         ORDER BY g.created_at DESC
       `, [teacherRecordId])
       
@@ -66,9 +66,11 @@ export async function GET(request: NextRequest) {
       groups = groupsResult.map((group: any) => ({
         id: group.id,
         name: group.name,
-        stageId: group.level_stage_id,
-        stageName: group.stage_name || 'عام',
-        studentCount: group.student_count || 0
+        description: group.description || '',
+        max_students: group.max_students || 20,
+        current_students: group.current_students || 0,
+        created_at: group.created_at || new Date().toISOString(),
+        teacher_name: group.teacher_name || user.email
       }))
       
       console.log('Processed groups:', groups)
@@ -79,11 +81,11 @@ export async function GET(request: NextRequest) {
     }
 
     console.log(`Returning ${groups.length} groups`)
-    return NextResponse.json(groups)
+    return NextResponse.json({ groups })
 
   } catch (error) {
     console.error('Error fetching teacher groups:', error)
-    return NextResponse.json([])
+    return NextResponse.json({ groups: [] })
   }
 }
 
@@ -95,8 +97,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
     }
 
-    const { name, stageId } = await request.json()
-    console.log('Creating group with data:', { name, stageId })
+    const { name, description, max_students, level_stage_id } = await request.json()
+    console.log('Creating group with data:', { name, description, max_students, level_stage_id })
 
     if (!name) {
       return NextResponse.json({ error: 'اسم المجموعة مطلوب' }, { status: 400 })
@@ -124,9 +126,9 @@ export async function POST(request: NextRequest) {
       console.log('Creating group with ID:', groupId)
       
       await executeQuery(`
-        INSERT INTO \`groups\` (id, teacher_id, name, level_stage_id, created_at) 
-        VALUES (?, ?, ?, ?, NOW())
-      `, [groupId, teacherRecordId, name, stageId || null])
+        INSERT INTO \`groups\` (id, teacher_id, name, description, max_students, level_stage_id, created_at) 
+        VALUES (?, ?, ?, ?, ?, ?, NOW())
+      `, [groupId, teacherRecordId, name, description || '', max_students || 20, level_stage_id || null])
 
       console.log('Group created successfully')
 
