@@ -318,7 +318,7 @@ export default function TeacherSchedulePage() {
                           {item.time} - {item.duration} دقيقة
                         </div>
                         <div className="text-xs text-gray-600">
-                          {getGroupName(item.group_id)}
+                          {getGroupName(item.group_id || '')}
                         </div>
                         {item.room && (
                           <div className="text-xs text-gray-600">
@@ -403,7 +403,7 @@ export default function TeacherSchedulePage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {getGroupName(item.group_id)}
+                    {getGroupName(item.group_id || '')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {item.duration} دقيقة
