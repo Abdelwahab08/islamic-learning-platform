@@ -22,7 +22,7 @@ export async function GET(
         s.user_id,
         u.email,
         COALESCE(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')), u.email) as name
-      FROM group_members gm
+      FROM \`group_members\` gm
       JOIN students s ON gm.student_id = s.id
       JOIN users u ON s.user_id = u.id
       WHERE gm.group_id = ?
@@ -59,9 +59,9 @@ export async function POST(
     // For testing, use a hardcoded teacher ID
     const teacherId = 'test-teacher-1756745498806'
 
-    // Check if group exists
+    // Check if group exists - wrap 'groups' in backticks since it's a reserved keyword
     const groupCheck = await executeQuery(
-      'SELECT id, max_students FROM groups WHERE id = ?',
+      'SELECT id, max_students FROM `groups` WHERE id = ?',
       [params.id]
     )
 
@@ -83,7 +83,7 @@ export async function POST(
 
     // Check if student is already in this group
     const existingMember = await executeQuery(
-      'SELECT id FROM group_members WHERE group_id = ? AND student_id = ?',
+      'SELECT id FROM `group_members` WHERE group_id = ? AND student_id = ?',
       [params.id, student_id]
     )
 
@@ -93,18 +93,18 @@ export async function POST(
 
     // Check if group is full
     const currentStudents = await executeQuery(
-      'SELECT COUNT(*) as count FROM group_members WHERE group_id = ?',
+      'SELECT COUNT(*) as count FROM `group_members` WHERE group_id = ?',
       [params.id]
     )
 
     if (currentStudents[0].count >= group.max_students) {
-      return NextResponse.json({ error: 'المجموعة ممتلئة' }, { status: 500 })
+      return NextResponse.json({ error: 'المجموعة ممتلئة' }, { status: 400 })
     }
 
     // Add student to group - removed created_at since it doesn't exist in schema
     const groupMemberId = uuidv4()
     await executeUpdate(`
-      INSERT INTO group_members (id, group_id, student_id)
+      INSERT INTO \`group_members\` (id, group_id, student_id)
       VALUES (?, ?, ?)
     `, [groupMemberId, params.id, student_id])
 
