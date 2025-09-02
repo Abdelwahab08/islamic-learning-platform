@@ -18,6 +18,8 @@ export async function middleware(request: NextRequest) {
     '/api/auth/apply-teacher',
     '/api/quran/daily-ayah',
     '/api/toasts/active',
+    // Temporary: Add Groups API for testing
+    '/api/teacher/groups',
   ]
 
   // Check if the path is public
