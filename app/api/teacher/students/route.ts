@@ -30,27 +30,12 @@ export async function GET(request: NextRequest) {
     const teacherId = user.id
     console.log('Getting students for teacher user ID:', teacherId)
 
-    // Get teacher record
-    let teacherRecordId = null
-    try {
-      const teachers = await executeQuery('SELECT id FROM teachers WHERE user_id = ?', [teacherId])
-      if (teachers.length === 0) {
-        console.log('No teacher record found for user:', teacherId)
-        return NextResponse.json({ students: [] })
-      }
-      teacherRecordId = teachers[0].id
-      console.log('Found teacher record ID:', teacherRecordId)
-    } catch (error) {
-      console.log('Error getting teacher record:', error)
-      return NextResponse.json({ students: [] })
-    }
-
     // Get students assigned to this teacher
     let students: Student[] = []
     try {
-      console.log('Querying students for teacher ID:', teacherRecordId)
+      console.log('Querying students for teacher email:', user.email)
       
-      // Use the same approach as weekly progress API
+      // Use simplified approach - filter by teacher email
       const studentsResult = await executeQuery(`
         SELECT 
           s.id,
@@ -71,9 +56,11 @@ export async function GET(request: NextRequest) {
         JOIN students s ON ts.student_id = s.id
         JOIN users u ON s.user_id = u.id
         LEFT JOIN stages st ON s.stage_id = st.id
-        WHERE ts.teacher_id = ?
+        JOIN teachers t ON ts.teacher_id = t.id
+        JOIN users teacher_user ON t.user_id = teacher_user.id
+        WHERE teacher_user.email = ?
         ORDER BY u.first_name, u.last_name
-      `, [teacherRecordId])
+      `, [user.email])
       
       console.log(`Found ${studentsResult.length} students for teacher`)
       

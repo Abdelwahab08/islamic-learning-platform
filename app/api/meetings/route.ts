@@ -158,41 +158,7 @@ export async function GET(request: NextRequest) {
         WHERE 1=1
       `;
     } else if (user.role === 'TEACHER') {
-      // Teacher can see meetings they created
-      // Get teacher record first (same approach as weekly progress API)
-      let teacherRecordId = null;
-      try {
-        const teachers = await executeQuery(
-          'SELECT id FROM teachers WHERE user_id = ?',
-          [user.id]
-        );
-        if (teachers.length === 0) {
-          console.log('No teacher record found for user:', user.id);
-          return NextResponse.json([]);
-        }
-        teacherRecordId = teachers[0].id;
-        console.log('Found teacher record ID:', teacherRecordId);
-      } catch (error) {
-        console.error('Error getting teacher record:', error);
-        return NextResponse.json([]);
-      }
-
-      // Check if this teacher has any meetings
-      try {
-        const hasMeetings = await executeQuery(
-          'SELECT COUNT(*) as count FROM meetings WHERE teacher_id = ?',
-          [teacherRecordId]
-        );
-        
-        if (hasMeetings[0]?.count === 0) {
-          console.log('No meetings found for teacher:', teacherRecordId);
-          return NextResponse.json([]);
-        }
-      } catch (error) {
-        console.error('Error checking meetings count:', error);
-        return NextResponse.json([]);
-      }
-
+      // Teacher can see meetings they created - simplified approach
       query = `
         SELECT 
           m.*,
@@ -202,9 +168,9 @@ export async function GET(request: NextRequest) {
         JOIN teachers t ON m.teacher_id = t.id
         JOIN users u ON t.user_id = u.id
         LEFT JOIN stages st ON m.level_stage_id = st.id
-        WHERE m.teacher_id = ?
+        WHERE u.email = ?
       `;
-      params.push(teacherRecordId);
+      params.push(user.email);
     } else if (user.role === 'STUDENT') {
       // Student can see meetings they're invited to
       query = `
