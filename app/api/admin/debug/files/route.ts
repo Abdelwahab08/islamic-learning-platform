@@ -82,10 +82,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(debugInfo)
   } catch (error) {
     console.error('Debug endpoint error:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
     return NextResponse.json(
       { 
         message: 'حدث خطأ في جلب معلومات التصحيح',
-        error: error.message 
+        error: errorMessage
       },
       { status: 500 }
     )
