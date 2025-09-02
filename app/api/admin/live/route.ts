@@ -29,39 +29,39 @@ export async function GET(request: NextRequest) {
       // Total users count
       executeQuerySingle('SELECT COUNT(*) as count FROM users'),
       
-      // Active users (logged in within last 30 minutes)
+      // Active users (approved users - since we don't have last_login_at)
       executeQuerySingle(`
         SELECT COUNT(*) as count 
         FROM users 
-        WHERE last_login_at > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+        WHERE is_approved = 1
       `),
       
-      // Online teachers (active within last 15 minutes)
+      // Online teachers (approved and verified teachers)
       executeQuerySingle(`
         SELECT COUNT(*) as count 
         FROM teachers t
         JOIN users u ON t.user_id = u.id
-        WHERE u.last_login_at > DATE_SUB(NOW(), INTERVAL 15 MINUTE)
+        WHERE u.is_approved = 1 AND t.verified = 1
       `),
       
-      // Online students (active within last 15 minutes)
+      // Online students (approved students)
       executeQuerySingle(`
         SELECT COUNT(*) as count 
         FROM students s
         JOIN users u ON s.user_id = u.id
-        WHERE u.last_login_at > DATE_SUB(NOW(), INTERVAL 15 MINUTE)
+        WHERE u.is_approved = 1
       `),
       
-      // Recent activities (last 10 activities)
+      // Recent activities (last 10 activities) - use created_at instead of last_login_at
       executeQuery(`
         SELECT 
-          'login' as action_type,
+          'user_created' as action_type,
           u.email as user_email,
           u.role as user_role,
-          u.last_login_at as timestamp,
+          u.created_at as timestamp,
           'success' as status
         FROM users u
-        WHERE u.last_login_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+        WHERE u.created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
         UNION ALL
         SELECT 
           'material_upload' as action_type,
@@ -162,7 +162,7 @@ async function getSystemStats() {
 
 function getActionText(actionType: string): string {
   const actions: { [key: string]: string } = {
-    'login': 'تسجيل الدخول',
+    'user_created': 'إنشاء حساب جديد',
     'material_upload': 'رفع مادة تعليمية',
     'certificate_generated': 'إنشاء شهادة',
     'progress_update': 'تحديث التقدم',
