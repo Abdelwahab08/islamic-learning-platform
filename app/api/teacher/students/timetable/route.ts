@@ -78,6 +78,16 @@ export async function GET(request: NextRequest) {
 
     // Get entries for the date range - use progress_logs table instead of student_ratings
     let entries: any[] = []
+    
+    // Debug: Check if teacher has any students assigned
+    console.log('DEBUG: Students found for teacher:', students.length)
+    if (students.length === 0) {
+      console.log('WARNING: No students found for this teacher. Check teacher_students table.')
+      // Get all students for debugging
+      const allStudents = await executeQuery('SELECT COUNT(*) as count FROM students')
+      console.log('Total students in database:', allStudents[0].count)
+    }
+    
     if (students.length > 0) {
       const entriesQuery = `
         SELECT
@@ -98,6 +108,26 @@ export async function GET(request: NextRequest) {
       
       entries = await executeQuery(entriesQuery, entriesParams)
       console.log('Found entries:', entries)
+      
+      // If no entries found with teacher filter, try without it as fallback
+      if (entries.length === 0) {
+        console.log('No entries found with teacher filter, trying without teacher filter...')
+        const fallbackQuery = `
+          SELECT
+            student_id,
+            DATE(created_at) as date,
+            rating,
+            page_number,
+            notes
+          FROM progress_logs
+          WHERE DATE(created_at) BETWEEN ? AND ?
+            AND student_id IN (${students.map(() => '?').join(',')})
+        `
+        
+        const fallbackParams = [from, to, ...students.map((s: any) => s.id)]
+        entries = await executeQuery(fallbackQuery, fallbackParams)
+        console.log('Found entries without teacher filter:', entries)
+      }
       
       // Debug: Check all progress_logs entries for this teacher
       const allTeacherEntries = await executeQuery(`
