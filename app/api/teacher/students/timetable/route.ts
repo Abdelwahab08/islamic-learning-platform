@@ -121,20 +121,6 @@ export async function GET(request: NextRequest) {
         `)
         console.log('Sample entries from progress_logs:', sampleEntries)
       }
-      
-      // Debug: Check if there are ANY entries in progress_logs at all
-      const allEntries = await executeQuery('SELECT COUNT(*) as count FROM progress_logs')
-      console.log('Total entries in progress_logs table:', allEntries[0].count)
-      
-      if (allEntries[0].count > 0) {
-        const sampleEntries = await executeQuery(`
-          SELECT student_id, teacher_id, DATE(created_at) as date, rating, page_number
-          FROM progress_logs 
-          ORDER BY created_at DESC
-          LIMIT 5
-        `)
-        console.log('Sample entries from progress_logs:', sampleEntries)
-      }
     }
 
     // Organize entries by student and date
