@@ -41,6 +41,22 @@ export default function AdminContentPage() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null)
 
+  // Some records store a single file path string (e.g. "/uploads/file.pdf"),
+  // while others may store a JSON array string. This safely returns a count.
+  const getFileCount = (fileUrl: string | null | undefined) => {
+    if (!fileUrl) return 0
+    const trimmed = String(fileUrl).trim()
+    if (trimmed.startsWith('[')) {
+      try {
+        const arr = JSON.parse(trimmed)
+        return Array.isArray(arr) ? arr.length : 1
+      } catch {
+        return 1
+      }
+    }
+    return 1
+  }
+
   useEffect(() => {
     fetchMaterials()
   }, [])
@@ -272,7 +288,7 @@ export default function AdminContentPage() {
                       <FileText className="w-4 h-4 text-gray-500 ml-2" />
                       <span className="font-medium">عدد الملفات:</span>
                       <span className="mr-2">
-                        {material.file_url ? JSON.parse(material.file_url).length : 0}
+                        {getFileCount(material.file_url)}
                       </span>
                     </div>
                   </div>
