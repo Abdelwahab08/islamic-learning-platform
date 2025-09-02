@@ -9,7 +9,8 @@ interface ScheduleItem {
   day: string
   time: string
   subject: string
-  group_name: string
+  group_id?: string
+  group_name?: string
   duration: number
   room?: string
 }
@@ -40,7 +41,7 @@ export default function TeacherSchedulePage() {
 
   useEffect(() => {
     fetchSchedule()
-    fetchGroups()
+    // Remove fetchGroups() since we'll get groups from the schedule API
   }, [])
 
   const fetchSchedule = async () => {
@@ -49,7 +50,10 @@ export default function TeacherSchedulePage() {
       if (response.ok) {
         const data = await response.json()
         console.log('Schedule data received:', data) // Debug log
+        
+        // Set both schedule and groups from the same API call
         setSchedule(data.schedule || [])
+        setGroups(data.groups || [])
         
         // Show message if table doesn't exist
         if (data.message && data.message.includes('جدول الحصص غير موجود')) {
@@ -64,32 +68,26 @@ export default function TeacherSchedulePage() {
           toast.error('فشل في تحميل الجدول الزمني')
         }
         setSchedule([])
+        setGroups([])
       }
     } catch (error) {
       console.error('Error fetching schedule:', error)
       toast.error('حدث خطأ في تحميل الجدول الزمني')
       setSchedule([])
+      setGroups([])
     } finally {
       setLoading(false)
     }
   }
 
-  const fetchGroups = async () => {
-    try {
-      const response = await fetch('/api/teacher/groups')
-      if (response.ok) {
-        const data = await response.json()
-        setGroups(data.groups || [])
-      } else {
-        toast.error('فشل في تحميل المجموعات')
-        setGroups([])
-      }
-    } catch (error) {
-      console.error('Error fetching groups:', error)
-      toast.error('حدث خطأ في تحميل المجموعات')
-      setGroups([])
-    }
+  // Helper function to get group name from group ID
+  const getGroupName = (groupId: string) => {
+    if (!groupId) return 'غير محدد'
+    const group = groups.find(g => g.id === groupId)
+    return group ? group.name : `المجموعة ${groupId}`
   }
+
+  // Remove the old fetchGroups function since we don't need it anymore
 
   const handleCreateLesson = async () => {
     if (!createForm.day_of_week || !createForm.start_time || !createForm.subject || !createForm.duration_minutes) {
@@ -137,7 +135,7 @@ export default function TeacherSchedulePage() {
       subject: lesson.subject,
       duration_minutes: lesson.duration,
       room: lesson.room || '',
-      group_id: lesson.group_name !== 'غير محدد' ? lesson.group_name.replace('المجموعة ', '') : ''
+      group_id: lesson.group_id || ''
     })
     setShowEditModal(true)
   }
@@ -320,7 +318,7 @@ export default function TeacherSchedulePage() {
                           {item.time} - {item.duration} دقيقة
                         </div>
                         <div className="text-xs text-gray-600">
-                          {item.group_name}
+                          {getGroupName(item.group_id)}
                         </div>
                         {item.room && (
                           <div className="text-xs text-gray-600">
@@ -405,7 +403,7 @@ export default function TeacherSchedulePage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {item.group_name}
+                    {getGroupName(item.group_id)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {item.duration} دقيقة

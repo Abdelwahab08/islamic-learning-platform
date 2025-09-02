@@ -73,6 +73,10 @@ export async function GET(request: NextRequest) {
       const lessons = await executeQuery(simpleQuery, [teacherRecordId])
       console.log('🔍 Simple query lessons:', lessons)
 
+      // Also get groups for this teacher to map group names
+      const groups = await executeQuery('SELECT id, name FROM `groups` WHERE teacher_id = ?', [teacherRecordId])
+      console.log('🔍 Groups for mapping:', groups)
+
       const transformedLessons = lessons.map((lesson: any) => ({
         id: lesson.id,
         day: lesson.day_of_week,
@@ -87,6 +91,7 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json({
         schedule: transformedLessons,
+        groups: groups, // Include groups for frontend mapping
         total: transformedLessons.length
       })
 
@@ -94,6 +99,7 @@ export async function GET(request: NextRequest) {
       console.error('❌ Error fetching lessons:', error)
       return NextResponse.json({
         schedule: [],
+        groups: [],
         total: 0,
         error: 'فشل في تحميل الحصص'
       })
