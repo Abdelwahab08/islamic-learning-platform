@@ -98,13 +98,43 @@ export async function GET(request: NextRequest) {
       entries = await executeQuery(entriesQuery, entriesParams)
       console.log('Found entries:', entries)
       
-      // Debug: Check if there are any ratings in the database at all
-      const allRatings = await executeQuery('SELECT COUNT(*) as count FROM progress_logs WHERE teacher_id = ?', [teacherId])
-      console.log('Total ratings in database for this teacher:', allRatings[0].count)
+      // Debug: Check all progress_logs entries for this teacher
+      const allTeacherEntries = await executeQuery(`
+        SELECT student_id, DATE(created_at) as date, rating, page_number, notes
+        FROM progress_logs 
+        WHERE teacher_id = ?
+        ORDER BY created_at DESC
+        LIMIT 10
+      `, [teacherId])
+      console.log('All teacher entries (last 10):', allTeacherEntries)
       
-      // Debug: Check ratings for the specific date range
-      const dateRangeRatings = await executeQuery('SELECT COUNT(*) as count FROM progress_logs WHERE DATE(created_at) BETWEEN ? AND ?', [from, to])
-      console.log('Total ratings in date range:', dateRangeRatings[0].count)
+      // Debug: Check if there are ANY entries in progress_logs at all
+      const allEntries = await executeQuery('SELECT COUNT(*) as count FROM progress_logs')
+      console.log('Total entries in progress_logs table:', allEntries[0].count)
+      
+      if (allEntries[0].count > 0) {
+        const sampleEntries = await executeQuery(`
+          SELECT student_id, teacher_id, DATE(created_at) as date, rating, page_number
+          FROM progress_logs 
+          ORDER BY created_at DESC
+          LIMIT 5
+        `)
+        console.log('Sample entries from progress_logs:', sampleEntries)
+      }
+      
+      // Debug: Check if there are ANY entries in progress_logs at all
+      const allEntries = await executeQuery('SELECT COUNT(*) as count FROM progress_logs')
+      console.log('Total entries in progress_logs table:', allEntries[0].count)
+      
+      if (allEntries[0].count > 0) {
+        const sampleEntries = await executeQuery(`
+          SELECT student_id, teacher_id, DATE(created_at) as date, rating, page_number
+          FROM progress_logs 
+          ORDER BY created_at DESC
+          LIMIT 5
+        `)
+        console.log('Sample entries from progress_logs:', sampleEntries)
+      }
     }
 
     // Organize entries by student and date
