@@ -125,28 +125,13 @@ export default function TimetablePage() {
         const result = await response.json()
         toast.success('تم تسجيل التقييم بنجاح')
         
-        // Update the data immediately
-        if (data) {
-          const newData = { ...data }
-          if (!newData.entries[ratingData.student_id]) {
-            newData.entries[ratingData.student_id] = {}
-          }
-          newData.entries[ratingData.student_id][ratingData.date] = result.entry
-          
-          // Update student's current page and stage
-          const studentIndex = newData.students.findIndex(s => s.id === ratingData.student_id)
-          if (studentIndex !== -1) {
-            newData.students[studentIndex].current_page = result.student.current_page
-            newData.students[studentIndex].current_stage_name = result.student.current_stage_name
-          }
-          
-          setData(newData)
-        }
+        // Refresh the data to show the updated ratings
+        await fetchData()
         
         setShowRateDrawer(false)
       } else {
         const error = await response.json()
-        toast.error(error.message || 'فشل في تسجيل التقييم')
+        toast.error(error.error || 'فشل في تسجيل التقييم')
       }
     } catch (error) {
       console.error('Error submitting rating:', error)
