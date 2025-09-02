@@ -27,7 +27,7 @@ export async function DELETE(
 
     // Check if group belongs to this teacher
     const groupCheck = await executeQuery(
-      'SELECT id FROM groups WHERE id = ? AND teacher_id = ?',
+      'SELECT id FROM `groups` WHERE id = ? AND teacher_id = ?',
       [params.id, teacherId]
     )
 
@@ -37,7 +37,7 @@ export async function DELETE(
 
     // Check if student is in this group
     const memberCheck = await executeQuery(
-      'SELECT id FROM group_members WHERE group_id = ? AND student_id = ?',
+      'SELECT id FROM group_students WHERE group_id = ? AND student_id = ?',
       [params.id, params.studentId]
     )
 
@@ -47,7 +47,7 @@ export async function DELETE(
 
     // Remove student from group
     await executeUpdate(
-      'DELETE FROM group_members WHERE group_id = ? AND student_id = ?',
+      'DELETE FROM group_students WHERE group_id = ? AND student_id = ?',
       [params.id, params.studentId]
     )
 

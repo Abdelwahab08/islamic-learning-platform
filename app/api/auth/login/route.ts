@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcryptjs from 'bcryptjs';
 import { getUserAccessByEmail } from '@/lib/user-access-helper';
+import { redirectFor, roleNameAr } from '@/lib/auth/redirect';
 import { generateToken } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
@@ -47,15 +48,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Set authentication cookie
+    const redirect_path = redirectFor(user.role as any, Number(user.is_approved));
+    const role_name_ar  = roleNameAr(user.role as any);
+
     const response = NextResponse.json({
       message: 'تم تسجيل الدخول بنجاح',
       user: {
         id: user.id,
         email: user.email,
         role: user.role,
-        roleNameAr: user.role_name_ar,
-        redirectPath: user.redirect_path
-      }
+        is_approved: user.is_approved,
+        role_name_ar
+      },
+      redirect_path
     });
 
     // Set authentication cookie

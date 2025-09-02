@@ -37,7 +37,7 @@ export async function PUT(
 
     // Check if group belongs to this teacher
     const groupCheck = await executeQuery(
-      'SELECT id FROM groups WHERE id = ? AND teacher_id = ?',
+      'SELECT id FROM `groups` WHERE id = ? AND teacher_id = ?',
       [params.id, teacherId]
     )
 
@@ -47,7 +47,7 @@ export async function PUT(
 
     // Update the group
     await executeUpdate(`
-      UPDATE groups 
+      UPDATE \`groups\` 
       SET name = ?, description = ?, max_students = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `, [name, description || '', max_students, params.id])
@@ -90,7 +90,7 @@ export async function DELETE(
 
     // Check if group belongs to this teacher
     const groupCheck = await executeQuery(
-      'SELECT id FROM groups WHERE id = ? AND teacher_id = ?',
+      'SELECT id FROM `groups` WHERE id = ? AND teacher_id = ?',
       [params.id, teacherId]
     )
 
@@ -98,11 +98,11 @@ export async function DELETE(
       return NextResponse.json({ error: 'المجموعة غير موجودة أو غير مصرح لك بحذفها' }, { status: 404 })
     }
 
-    // Delete group members first
-    await executeUpdate('DELETE FROM group_members WHERE group_id = ?', [params.id])
+    // Delete group members first (using group_students table)
+    await executeUpdate('DELETE FROM group_students WHERE group_id = ?', [params.id])
 
     // Delete the group
-    await executeUpdate('DELETE FROM groups WHERE id = ?', [params.id])
+    await executeUpdate('DELETE FROM `groups` WHERE id = ?', [params.id])
 
     return NextResponse.json({
       message: 'تم حذف المجموعة بنجاح'
