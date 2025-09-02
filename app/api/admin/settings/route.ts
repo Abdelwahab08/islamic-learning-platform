@@ -15,11 +15,22 @@ export async function POST(request: NextRequest) {
     const settings = await request.json()
 
     // Update admin_toasts table with new settings
-    await executeUpdate(`
-      UPDATE admin_toasts 
-      SET title = ?, body = ?
-      WHERE id = (SELECT id FROM admin_toasts LIMIT 1)
-    `, [settings.siteName, settings.siteDescription])
+    // First get the ID, then update to avoid MySQL subquery restriction
+    const [toastResult] = await executeQuery('SELECT id FROM admin_toasts LIMIT 1')
+    if (toastResult && toastResult.length > 0) {
+      const toastId = toastResult[0].id
+      await executeUpdate(`
+        UPDATE admin_toasts 
+        SET title = ?, body = ?
+        WHERE id = ?
+      `, [settings.siteName, settings.siteDescription, toastId])
+    } else {
+      // Create new admin_toast if none exists
+      await executeUpdate(`
+        INSERT INTO admin_toasts (id, title, body, created_at) 
+        VALUES (UUID(), ?, ?, NOW())
+      `, [settings.siteName, settings.siteDescription])
+    }
 
     return NextResponse.json({
       message: 'تم حفظ الإعدادات بنجاح',
