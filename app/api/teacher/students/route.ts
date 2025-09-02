@@ -28,18 +28,20 @@ export async function GET(request: NextRequest) {
     }
 
     const teacherId = user.id
-    console.log('Getting students for teacher user ID:', teacherId)
+    console.log('🔍 DEBUG: Getting students for teacher user ID:', teacherId)
+    console.log('🔍 DEBUG: Teacher email:', user.email)
 
     // Get teacher record ID from teachers table
     const teacherRecord = await executeQuery('SELECT id FROM teachers WHERE user_id = ?', [user.id])
     
     if (teacherRecord.length === 0) {
+      console.log('❌ ERROR: No teacher record found for user ID:', user.id)
       return NextResponse.json({ error: 'لم يتم العثور على بيانات المعلم' }, { status: 404 })
     }
 
     const teacherDbId = teacherRecord[0].id
-    console.log('Teacher DB ID:', teacherDbId)
-    console.log('Teacher User ID:', user.id)
+    console.log('🔍 DEBUG: Teacher DB ID from teachers table:', teacherDbId)
+    console.log('🔍 DEBUG: Teacher User ID:', user.id)
 
     // Debug: Check what's in teacher_students table for this teacher
     console.log('🔍 DEBUG: Checking teacher_students table...')
@@ -53,10 +55,35 @@ export async function GET(request: NextRequest) {
     `, [user.email])
     console.log('🔍 DEBUG: All assignments for this teacher email:', debugAssignments)
 
+    // Debug: Check what's in teacher_students table using teacherDbId
+    console.log('🔍 DEBUG: Checking teacher_students table using teacherDbId...')
+    const debugAssignmentsById = await executeQuery(`
+      SELECT ts.teacher_id, ts.student_id, ts.assigned_at
+      FROM teacher_students ts
+      WHERE ts.teacher_id = ?
+    `, [teacherDbId])
+    console.log('🔍 DEBUG: All assignments for teacherDbId:', debugAssignmentsById)
+
+    // Debug: Check ALL teacher_students entries
+    console.log('🔍 DEBUG: Checking ALL teacher_students entries...')
+    const allAssignments = await executeQuery(`
+      SELECT ts.teacher_id, ts.student_id, ts.assigned_at,
+             t.id as teacher_table_id, u.email as teacher_email,
+             s.id as student_table_id, u2.email as student_email
+      FROM teacher_students ts
+      JOIN teachers t ON ts.teacher_id = t.id
+      JOIN users u ON t.user_id = u.id
+      JOIN students s ON ts.student_id = s.id
+      JOIN users u2 ON s.user_id = u2.id
+      ORDER BY ts.assigned_at DESC
+      LIMIT 10
+    `)
+    console.log('🔍 DEBUG: ALL teacher_students entries:', allAssignments)
+
     // Get students assigned to this teacher ONLY
     let students: Student[] = []
     try {
-      console.log('Querying students for teacher DB ID:', teacherDbId)
+      console.log('🔍 DEBUG: Querying students for teacher DB ID:', teacherDbId)
       
       const result = await executeQuery(`
         SELECT DISTINCT
@@ -83,19 +110,20 @@ export async function GET(request: NextRequest) {
       `, [teacherDbId])
       
       students = result
-      console.log(`Found ${students.length} students assigned to teacher ${user.email}`)
+      console.log(`🔍 DEBUG: Found ${students.length} students assigned to teacher ${user.email}`)
+      console.log('🔍 DEBUG: Students result:', students)
       
     } catch (error) {
-      console.log('Error getting students:', error)
+      console.log('❌ ERROR getting students:', error)
       // Return empty array if query fails
       students = []
     }
 
-    console.log(`Returning ${students.length} students`)
+    console.log(`🔍 DEBUG: Returning ${students.length} students`)
     return NextResponse.json({ students })
 
   } catch (error) {
-    console.error('Error fetching teacher students:', error)
+    console.error('❌ ERROR fetching teacher students:', error)
     return NextResponse.json({ students: [] })
   }
 }
