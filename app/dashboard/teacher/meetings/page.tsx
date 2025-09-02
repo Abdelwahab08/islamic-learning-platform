@@ -411,16 +411,18 @@ export default function TeacherMeetingsPage() {
                     <div className="text-sm font-medium text-gray-900">
                       {meeting.title}
                     </div>
-                    <div className="text-sm text-gray-500">
-                      {meeting.description}
-                    </div>
+                    {meeting.description && (
+                      <div className="text-sm text-gray-500">
+                        {meeting.description}
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {new Date(meeting.date).toLocaleDateString('ar-SA')}
+                      {meeting.date ? new Date(meeting.date).toLocaleDateString('ar-SA') : 'غير محدد'}
                     </div>
                     <div className="text-sm text-gray-500">
-                      {meeting.time} ({meeting.duration} دقيقة)
+                      {meeting.time ? `${meeting.time} (${meeting.duration} دقيقة)` : 'غير محدد'}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -433,7 +435,7 @@ export default function TeacherMeetingsPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {meeting.current_participants}/{meeting.max_participants}
+                      {meeting.current_participants || 0}/{meeting.max_participants || 20}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

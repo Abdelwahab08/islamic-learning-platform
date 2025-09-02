@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     }
     const teacherRecordId = teachers[0].id
 
-    // Get real meetings from database
+    // Get real meetings from database and map to frontend expected format
     const meetings = await executeQuery(`
       SELECT 
         m.*,
@@ -32,7 +32,23 @@ export async function GET(request: NextRequest) {
       ORDER BY m.scheduled_at DESC
     `, [teacherRecordId])
 
-    return NextResponse.json({ meetings })
+    // Map database fields to frontend expected format
+    const mappedMeetings = meetings.map((meeting: any) => ({
+      id: meeting.id,
+      title: meeting.title,
+      description: '', // Not stored in database
+      date: meeting.scheduled_at ? new Date(meeting.scheduled_at).toISOString().split('T')[0] : '',
+      time: meeting.scheduled_at ? new Date(meeting.scheduled_at).toTimeString().slice(0, 5) : '',
+      duration: meeting.duration_minutes || 60,
+      max_participants: 20, // Default value
+      current_participants: 0, // Default value
+      meeting_type: meeting.provider || 'AGORA',
+      status: meeting.status || 'scheduled',
+      group_id: meeting.group_id,
+      stage_id: meeting.level_stage_id
+    }))
+
+    return NextResponse.json({ meetings: mappedMeetings })
 
   } catch (error) {
     console.error('Error fetching teacher meetings:', error)
@@ -62,8 +78,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'جميع الحقول مطلوبة' }, { status: 400 })
     }
 
-    // Combine date and time
-    const scheduledAt = new Date(`${date}T${time}`)
+    // Combine date and time with proper validation
+    let scheduledAt: Date
+    try {
+      scheduledAt = new Date(`${date}T${time}`)
+      if (isNaN(scheduledAt.getTime())) {
+        return NextResponse.json({ error: 'تاريخ أو وقت غير صحيح' }, { status: 400 })
+      }
+    } catch (error) {
+      return NextResponse.json({ error: 'تاريخ أو وقت غير صحيح' }, { status: 400 })
+    }
     
     // Generate join URL
     const joinUrl = `https://meet.google.com/${uuidv4().replace(/-/g, '').substring(0, 12)}`
