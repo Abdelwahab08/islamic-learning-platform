@@ -39,6 +39,19 @@ export async function GET(request: NextRequest) {
 
     const teacherDbId = teacherRecord[0].id
     console.log('Teacher DB ID:', teacherDbId)
+    console.log('Teacher User ID:', user.id)
+
+    // Debug: Check what's in teacher_students table for this teacher
+    console.log('🔍 DEBUG: Checking teacher_students table...')
+    const debugAssignments = await executeQuery(`
+      SELECT ts.teacher_id, ts.student_id, ts.assigned_at, 
+             t.id as teacher_table_id, u.email as teacher_email
+      FROM teacher_students ts
+      JOIN teachers t ON ts.teacher_id = t.id
+      JOIN users u ON t.user_id = u.id
+      WHERE u.email = ?
+    `, [user.email])
+    console.log('🔍 DEBUG: All assignments for this teacher email:', debugAssignments)
 
     // Get students assigned to this teacher ONLY
     let students: Student[] = []
