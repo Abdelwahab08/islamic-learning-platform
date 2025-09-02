@@ -92,7 +92,7 @@ export default function AdminCertificatesPage() {
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `certificate-${certificateId}.html`
+        a.download = `certificate-${certificateId}.pdf`
         document.body.appendChild(a)
         a.click()
         window.URL.revokeObjectURL(url)
