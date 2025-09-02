@@ -43,12 +43,12 @@ export async function GET(
         s.user_id,
         u.email,
         CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as name,
-        gs.created_at as joined_at
-      FROM group_students gs
-      JOIN students s ON gs.student_id = s.id
+        gm.created_at as joined_at
+      FROM group_members gm
+      JOIN students s ON gm.student_id = s.id
       JOIN users u ON s.user_id = u.id
-      WHERE gs.group_id = ?
-      ORDER BY gs.created_at DESC
+      WHERE gm.group_id = ?
+      ORDER BY gm.created_at DESC
     `, [params.id])
 
     return NextResponse.json({ students })
@@ -115,7 +115,7 @@ export async function POST(
 
     // Check if student is already in this group
     const existingMember = await executeQuery(
-      'SELECT id FROM group_students WHERE group_id = ? AND student_id = ?',
+      'SELECT id FROM group_members WHERE group_id = ? AND student_id = ?',
       [params.id, student_id]
     )
 
@@ -125,7 +125,7 @@ export async function POST(
 
     // Check if group is full
     const currentStudents = await executeQuery(
-      'SELECT COUNT(*) as count FROM group_students WHERE group_id = ?',
+      'SELECT COUNT(*) as count FROM group_members WHERE group_id = ?',
       [params.id]
     )
 
@@ -135,7 +135,7 @@ export async function POST(
 
     // Add student to group
     await executeUpdate(`
-      INSERT INTO group_students (id, group_id, student_id, created_at)
+      INSERT INTO group_members (id, group_id, student_id, created_at)
       VALUES (?, ?, ?, CURRENT_TIMESTAMP)
     `, [uuidv4(), params.id, student_id])
 
