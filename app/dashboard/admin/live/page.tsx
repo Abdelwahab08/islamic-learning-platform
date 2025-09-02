@@ -55,6 +55,8 @@ export default function AdminLivePage() {
   const [activities, setActivities] = useState<ActivityLog[]>([])
   const [loading, setLoading] = useState(true)
   const [autoRefresh, setAutoRefresh] = useState(true)
+  const [isLive, setIsLive] = useState(false)
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
 
   useEffect(() => {
     fetchLiveData()
@@ -67,53 +69,61 @@ export default function AdminLivePage() {
 
   const fetchLiveData = async () => {
     try {
-      // Simulate API calls
-      const mockStats: SystemStats = {
-        activeUsers: Math.floor(Math.random() * 50) + 10,
-        totalUsers: 150,
-        onlineTeachers: Math.floor(Math.random() * 10) + 2,
-        onlineStudents: Math.floor(Math.random() * 40) + 8,
-        systemLoad: Math.random() * 100,
-        memoryUsage: Math.random() * 100,
-        diskUsage: Math.random() * 100,
-        uptime: '2:15:30'
+      const response = await fetch('/api/admin/live')
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data.stats)
+        setActivities(data.activities)
+      } else {
+        toast.error('فشل في تحميل البيانات المباشرة')
       }
-
-      const mockActivities: ActivityLog[] = [
-        {
-          id: '1',
-          user: 'student@islamic.edu',
-          action: 'تسجيل الدخول',
-          timestamp: new Date().toISOString(),
-          status: 'success',
-          ip: '192.168.1.100'
-        },
-        {
-          id: '2',
-          user: 'teacher@islamic.edu',
-          action: 'رفع مادة تعليمية',
-          timestamp: new Date(Date.now() - 30000).toISOString(),
-          status: 'success',
-          ip: '192.168.1.101'
-        },
-        {
-          id: '3',
-          user: 'admin@islamic.edu',
-          action: 'تعديل إعدادات النظام',
-          timestamp: new Date(Date.now() - 60000).toISOString(),
-          status: 'warning',
-          ip: '192.168.1.102'
-        }
-      ]
-
-      setStats(mockStats)
-      setActivities(mockActivities)
     } catch (error) {
       toast.error('فشل في تحميل البيانات المباشرة')
     } finally {
       setLoading(false)
     }
   }
+
+  // Real-time updates using Server-Sent Events
+  useEffect(() => {
+    if (!autoRefresh) return
+
+    const eventSource = new EventSource('/api/admin/live/stream')
+    
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        if (data.type === 'live_update') {
+          setStats(data.stats)
+          setActivities(data.activities)
+          setIsLive(true)
+          setLastUpdate(new Date())
+        } else if (data.error) {
+          console.error('Live stream error:', data.error)
+          setIsLive(false)
+        }
+      } catch (error) {
+        console.error('Error parsing live data:', error)
+        setIsLive(false)
+      }
+    }
+
+    eventSource.onopen = () => {
+      setIsLive(true)
+      setLastUpdate(new Date())
+    }
+
+    eventSource.onerror = (error) => {
+      console.error('EventSource error:', error)
+      setIsLive(false)
+      eventSource.close()
+    }
+
+    return () => {
+      eventSource.close()
+      setIsLive(false)
+    }
+  }, [autoRefresh])
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -173,7 +183,20 @@ export default function AdminLivePage() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">المراقبة المباشرة</h1>
             <p className="text-gray-600">مراقبة النظام والنشاط في الوقت الفعلي</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            {/* Live Status Indicator */}
+            <div className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full ${isLive ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+              <span className={`text-sm font-medium ${isLive ? 'text-green-600' : 'text-gray-500'}`}>
+                {isLive ? 'مباشر' : 'غير متصل'}
+              </span>
+              {lastUpdate && (
+                <span className="text-xs text-gray-500">
+                  آخر تحديث: {lastUpdate.toLocaleTimeString('ar-SA')}
+                </span>
+              )}
+            </div>
+            
             <Button
               onClick={fetchLiveData}
               className="btn-secondary"

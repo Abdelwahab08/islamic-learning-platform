@@ -1,0 +1,10 @@
+[33m0fed2da[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Add debugging to timetable and rating APIs to identify why ratings aren't displaying
+[33mdbb4ce7[m Fix rating persistence: Use consistent date format to ensure ratings are saved and retrieved correctly
+[33m35b6274[m Fix timetable rating persistence: Refresh data after rating submission to show saved ratings
+[33m712db03[m Fix student rating API: Implement proper teacher authentication and get actual teacher record ID
+[33m165c182[m Fix TypeScript error: Handle undefined group_id in schedule page
+[33m3efc68a[m Fix student rating API: Use correct progress_logs table instead of non-existent student_ratings
+[33m849cc3e[m Implement Option 1: Frontend mapping for group names without JOINs
+[33mb832ee1[m Revert: Restore original working lessons query to fix schedule display
+[33mf31bb9e[m Fix Schedule display: Show actual group names instead of group IDs
+[33m640982d[m Fix Meetings display: Map API fields correctly, fix Invalid Date, and handle empty descriptions

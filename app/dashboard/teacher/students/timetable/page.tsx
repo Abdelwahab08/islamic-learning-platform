@@ -115,6 +115,8 @@ export default function TimetablePage() {
 
   const handleRateSubmit = async (ratingData: any) => {
     try {
+      console.log('Submitting rating data:', ratingData)
+      
       const response = await fetch('/api/teacher/students/rate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -123,6 +125,7 @@ export default function TimetablePage() {
 
       if (response.ok) {
         const result = await response.json()
+        console.log('Rating API response:', result)
         toast.success('تم تسجيل التقييم بنجاح')
         
         // Refresh the data to show the updated ratings
@@ -131,6 +134,7 @@ export default function TimetablePage() {
         setShowRateDrawer(false)
       } else {
         const error = await response.json()
+        console.log('Rating API error:', error)
         toast.error(error.error || 'فشل في تسجيل التقييم')
       }
     } catch (error) {

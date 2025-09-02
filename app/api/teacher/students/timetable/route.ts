@@ -93,7 +93,18 @@ export async function GET(request: NextRequest) {
       `
 
       const entriesParams = [from, to, ...students.map((s: any) => s.id), teacherId]
+      console.log('Fetching entries with params:', { from, to, teacherId, studentIds: students.map((s: any) => s.id) })
+      
       entries = await executeQuery(entriesQuery, entriesParams)
+      console.log('Found entries:', entries)
+      
+      // Debug: Check if there are any ratings in the database at all
+      const allRatings = await executeQuery('SELECT COUNT(*) as count FROM progress_logs WHERE teacher_id = ?', [teacherId])
+      console.log('Total ratings in database for this teacher:', allRatings[0].count)
+      
+      // Debug: Check ratings for the specific date range
+      const dateRangeRatings = await executeQuery('SELECT COUNT(*) as count FROM progress_logs WHERE DATE(created_at) BETWEEN ? AND ?', [from, to])
+      console.log('Total ratings in date range:', dateRangeRatings[0].count)
     }
 
     // Organize entries by student and date
