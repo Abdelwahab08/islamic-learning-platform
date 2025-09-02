@@ -51,52 +51,74 @@ export async function GET(
       )
     }
 
-    // Parse file_url to get filename
+    // Parse file_url to get filename and path
     let filename = 'sample-material.pdf' // default
+    let filePath = ''
+    
     try {
       if (material.file_url) {
-        const fileUrls = JSON.parse(material.file_url)
-        if (Array.isArray(fileUrls) && fileUrls.length > 0) {
-          filename = fileUrls[0]
+        // Handle both JSON array and string formats
+        if (material.file_url.startsWith('[')) {
+          const fileUrls = JSON.parse(material.file_url)
+          if (Array.isArray(fileUrls) && fileUrls.length > 0) {
+            filename = fileUrls[0]
+          }
+        } else {
+          // Handle direct string path like "/materials/file.pdf"
+          filename = material.file_url.split('/').pop() || 'sample-material.pdf'
         }
       }
     } catch (error) {
       console.error('Error parsing file_url:', error)
     }
 
-    // Construct file path
-    const filePath = path.join(process.cwd(), 'uploads', 'materials', filename)
+    // Try to construct file path - handle both local and production scenarios
+    const localPath = path.join(process.cwd(), 'uploads', 'materials', filename)
+    const publicPath = path.join(process.cwd(), 'public', filename.replace('/materials/', ''))
+    
+    let fileBuffer: Buffer | null = null
+    let finalPath = ''
 
     try {
-      // Check if file exists
-      await fs.access(filePath)
-      
-      // Read file
-      const fileBuffer = await fs.readFile(filePath)
-      
-      // Determine content type based on file extension
-      const ext = path.extname(filename).toLowerCase()
-      let contentType = 'application/octet-stream'
-      
-      if (ext === '.pdf') contentType = 'application/pdf'
-      else if (ext === '.mp4' || ext === '.avi' || ext === '.mov') contentType = 'video/mp4'
-      else if (ext === '.mp3' || ext === '.wav') contentType = 'audio/mpeg'
-      else if (ext === '.doc' || ext === '.docx') contentType = 'application/msword'
-      else if (ext === '.txt') contentType = 'text/plain'
-
-      return new NextResponse(Buffer.from(fileBuffer), {
-        headers: {
-          'Content-Type': contentType,
-          'Content-Disposition': `attachment; filename="${filename}"`,
-        },
-      })
-    } catch (fileError) {
-      console.error('Error reading file:', fileError)
-      return NextResponse.json(
-        { message: 'خطأ في قراءة الملف' },
-        { status: 500 }
-      )
+      // First try local uploads folder
+      await fs.access(localPath)
+      fileBuffer = await fs.readFile(localPath)
+      finalPath = localPath
+    } catch (localError) {
+      try {
+        // Try public folder (for production)
+        await fs.access(publicPath)
+        fileBuffer = await fs.readFile(publicPath)
+        finalPath = publicPath
+      } catch (publicError) {
+        // If neither exists, return error with helpful message
+        console.error('File not found in local or public folders:', { localPath, publicPath })
+        return NextResponse.json(
+          { 
+            message: 'الملف غير متوفر للتحميل حالياً',
+            details: 'يرجى التواصل مع الإدارة لتحديث الملف'
+          },
+          { status: 404 }
+        )
+      }
     }
+
+    // Determine content type based on file extension
+    const ext = path.extname(filename).toLowerCase()
+    let contentType = 'application/octet-stream'
+    
+    if (ext === '.pdf') contentType = 'application/pdf'
+    else if (ext === '.mp4' || ext === '.avi' || ext === '.mov') contentType = 'video/mp4'
+    else if (ext === '.mp3' || ext === '.wav') contentType = 'audio/mpeg'
+    else if (ext === '.doc' || ext === '.docx') contentType = 'application/msword'
+    else if (ext === '.txt') contentType = 'text/plain'
+
+    return new NextResponse(Buffer.from(fileBuffer), {
+      headers: {
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${filename}"`,
+      },
+    })
 
   } catch (error) {
     console.error('Material download error:', error)
