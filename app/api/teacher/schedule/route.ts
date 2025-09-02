@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
           g.name as group_name
         FROM lessons l
         JOIN teachers t ON l.teacher_id = t.id
-        LEFT JOIN `groups` g ON l.group_id = g.id
+        LEFT JOIN \`groups\` g ON l.group_id = g.id
         WHERE t.user_id = ?
         ORDER BY 
           CASE l.day_of_week
