@@ -116,12 +116,13 @@ async function getLiveData() {
         UNION ALL
         SELECT 
           'material_upload' as action_type,
-          CONCAT(t.first_name, ' ', t.last_name) as user_email,
+          CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as user_email,
           'TEACHER' as user_role,
           m.created_at as timestamp,
           'success' as status
         FROM materials m
         JOIN teachers t ON m.teacher_id = t.id
+        JOIN users u ON t.user_id = u.id
         WHERE m.created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
         ORDER BY timestamp DESC
         LIMIT 10
