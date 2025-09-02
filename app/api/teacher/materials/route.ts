@@ -55,26 +55,38 @@ export async function POST(request: NextRequest) {
     }
     const teacherRecordId = teachers[0].id
 
-    const body = await request.json()
-    const { title, description, type, content, file_url, stage_id } = body
+    // Handle FormData instead of JSON
+    const formData = await request.formData()
+    const title = formData.get('title') as string
+    const description = formData.get('description') as string
+    const kind = formData.get('kind') as string
+    const file = formData.get('file') as File
+    const group_id = formData.get('group_id') as string
+    const stage_id = formData.get('stage_id') as string
 
     if (!title) {
       return NextResponse.json({ error: 'عنوان المادة مطلوب' }, { status: 400 })
     }
 
-    // Save to database
+    if (!file) {
+      return NextResponse.json({ error: 'الملف مطلوب' }, { status: 400 })
+    }
+
+    // For now, just save the file info to database
+    // In a real app, you'd upload the file to storage and save the URL
     const materialId = uuidv4()
+    const fileUrl = `/uploads/${file.name}` // Placeholder URL
+    
     await executeQuery(`
-      INSERT INTO materials (id, teacher_id, title, description, type, content, file_url, level_stage_id, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+      INSERT INTO materials (id, teacher_id, title, description, kind, file_url, level_stage_id, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
     `, [
       materialId,
       teacherRecordId,
       title,
       description || '',
-      type || 'document',
-      content || '',
-      file_url || '',
+      kind || 'PDF',
+      fileUrl,
       stage_id || null
     ])
 
