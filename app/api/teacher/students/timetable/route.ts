@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
       studentsQuery += `
         AND s.id IN (
           SELECT student_id
-          FROM group_members
+          FROM \`group_members\`
           WHERE group_id = ?
         )
       `
@@ -76,22 +76,23 @@ export async function GET(request: NextRequest) {
 
     const students = await executeQuery(studentsQuery, queryParams)
 
-    // Get entries for the date range
+    // Get entries for the date range - use progress_logs table instead of student_ratings
     let entries: any[] = []
     if (students.length > 0) {
       const entriesQuery = `
         SELECT
           student_id,
-          DATE(date) as date,
+          DATE(created_at) as date,
           rating,
           page_number,
           notes
-        FROM student_ratings
-        WHERE date BETWEEN ? AND ?
+        FROM progress_logs
+        WHERE DATE(created_at) BETWEEN ? AND ?
           AND student_id IN (${students.map(() => '?').join(',')})
+          AND teacher_id = ?
       `
 
-      const entriesParams = [from, to, ...students.map((s: any) => s.id)]
+      const entriesParams = [from, to, ...students.map((s: any) => s.id), teacherId]
       entries = await executeQuery(entriesQuery, entriesParams)
     }
 
