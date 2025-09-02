@@ -1,7 +1,7 @@
 'use client'
 
 import { formatWeekDay, formatDateDisplay } from '@/lib/dates'
-import { User, Info } from 'lucide-react'
+import { User, Info, Star, CheckCircle, RotateCcw, X, Clock } from 'lucide-react'
 
 interface Student {
   id: string
@@ -33,17 +33,35 @@ export default function TimetableGrid({ data, onCellClick }: TimetableGridProps)
     switch (rating) {
       case 'متفوق':
       case 'ممتاز':
-        return 'bg-[#16a34a] text-white'
+        return 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg'
       case 'جيد':
-        return 'bg-[#22c55e] text-white'
+        return 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg'
       case 'إعادة':
-        return 'bg-[#f59e0b] text-white'
+        return 'bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg'
       case 'غياب':
-        return 'bg-[#ef4444] text-white'
+        return 'bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg'
       case 'إذن':
-        return 'bg-[#2db1a1] text-white'
+        return 'bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-lg'
       default:
-        return 'bg-gray-100 text-gray-500'
+        return 'bg-gray-100 hover:bg-gray-200 text-gray-500 border-2 border-dashed border-gray-300'
+    }
+  }
+
+  const getRatingIcon = (rating: string) => {
+    switch (rating) {
+      case 'متفوق':
+      case 'ممتاز':
+        return <Star className="w-4 h-4" />
+      case 'جيد':
+        return <CheckCircle className="w-4 h-4" />
+      case 'إعادة':
+        return <RotateCcw className="w-4 h-4" />
+      case 'غياب':
+        return <X className="w-4 h-4" />
+      case 'إذن':
+        return <Clock className="w-4 h-4" />
+      default:
+        return null
     }
   }
 
@@ -77,12 +95,12 @@ export default function TimetableGrid({ data, onCellClick }: TimetableGridProps)
           {/* Day Headers */}
           {data.days.map((day, index) => {
             const date = new Date(day)
-                         return (
-               <div key={day} className="bg-gray-50 border border-gray-200 p-3 text-center">
-                 <div className="font-bold text-sm">{formatWeekDay(date)}</div>
-                 <div className="text-xs text-gray-500">{formatDateDisplay(date)}</div>
-               </div>
-             )
+            return (
+              <div key={day} className="bg-gray-50 border border-gray-200 p-3 text-center">
+                <div className="font-bold text-sm">{formatWeekDay(date)}</div>
+                <div className="text-xs text-gray-500">{formatDateDisplay(date)}</div>
+              </div>
+            )
           })}
           
           {/* Student Name Column Header */}
@@ -98,35 +116,53 @@ export default function TimetableGrid({ data, onCellClick }: TimetableGridProps)
             {data.days.map((day) => {
               const entry = data.entries[student.id]?.[day]
               const hasNotes = entry?.notes && entry.notes.trim().length > 0
+              const isEmpty = !entry
               
               return (
                 <div
                   key={`${student.id}-${day}`}
                   className={`
-                    border border-gray-200 p-2 cursor-pointer hover:shadow-md transition-shadow
-                    ${entry ? getRatingColor(entry.rating) : 'bg-gray-100 text-gray-500'}
-                    ${hasNotes ? 'relative' : ''}
+                    border-2 p-3 cursor-pointer hover:shadow-lg transition-all duration-200
+                    ${entry ? getRatingColor(entry.rating) : 'bg-gray-100 hover:bg-gray-200 text-gray-500 border-dashed border-gray-300'}
+                    ${hasNotes ? 'relative ring-2 ring-blue-300' : ''}
+                    ${isEmpty ? 'hover:border-gray-400' : ''}
+                    min-h-[80px] flex flex-col justify-center items-center
                   `}
                   onClick={() => onCellClick(student, day, entry)}
                   role="button"
                   tabIndex={0}
-                                     aria-label={`تقييم ${student.name} في ${formatDateDisplay(new Date(day))}`}
+                  aria-label={`تقييم ${student.name} في ${formatDateDisplay(new Date(day))}`}
                   title={entry ? `${student.name} - ${entry.rating} - ص ${entry.page_number}${entry.notes ? ` - ${entry.notes}` : ''}` : `${student.name} - لا يوجد تقييم`}
                 >
-                                     <div className="text-center">
-                     <div className="text-lg font-bold">
-                       {entry ? getRatingText(entry.rating) : ''}
-                     </div>
-                    {entry && (
-                      <div className="text-xs opacity-80">
-                        ص ({entry.page_number})
+                  {entry ? (
+                    // Box with evaluation data
+                    <div className="text-center space-y-1">
+                      {/* Rating Icon */}
+                      <div className="flex justify-center mb-1">
+                        {getRatingIcon(entry.rating)}
                       </div>
-                    )}
-                  </div>
-                  
-                  {hasNotes && (
-                    <div className="absolute top-1 right-1">
-                      <Info className="w-3 h-3" />
+                      
+                      {/* Rating Text (Grade) */}
+                      <div className="text-lg font-bold">
+                        {getRatingText(entry.rating)}
+                      </div>
+                      
+                      {/* Page Number */}
+                      <div className="text-xs opacity-90 font-medium">
+                        ص {entry.page_number}
+                      </div>
+                      
+                      {/* Notes indicator */}
+                      {hasNotes && (
+                        <div className="absolute top-1 right-1">
+                          <Info className="w-3 h-3 text-blue-600" />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    // Empty box
+                    <div className="text-center text-gray-400">
+                      <div className="text-xs">اضغط لإضافة تقييم</div>
                     </div>
                   )}
                 </div>

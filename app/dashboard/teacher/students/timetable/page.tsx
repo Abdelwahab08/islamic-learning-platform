@@ -243,12 +243,29 @@ export default function TimetablePage() {
               
               {/* Legend */}
               <div className="flex flex-wrap gap-2">
-                <Badge className="bg-[#16a34a] text-white">متفوق/ممتاز (10)</Badge>
-                <Badge className="bg-[#22c55e] text-white">جيد (9)</Badge>
-                <Badge className="bg-[#f59e0b] text-white">إعادة</Badge>
-                <Badge className="bg-[#ef4444] text-white">غياب</Badge>
-                <Badge className="bg-[#2db1a1] text-white">إذن</Badge>
-                                 <Badge className="bg-gray-100 text-gray-500">فارغ (لا يوجد)</Badge>
+                <Badge className="bg-[#16a34a] text-white">
+                  متفوق/ممتاز (10) - ص
+                </Badge>
+                <Badge className="bg-[#22c55e] text-white">
+                  جيد (9) - ص
+                </Badge>
+                <Badge className="bg-[#f59e0b] text-white">
+                  إعادة - ص
+                </Badge>
+                <Badge className="bg-[#ef4444] text-white">
+                  غياب - ص
+                </Badge>
+                <Badge className="bg-[#2db1a1] text-white">
+                  إذن - ص
+                </Badge>
+                <Badge className="bg-gray-100 text-gray-500">
+                  فارغ (لا يوجد تقييم)
+                </Badge>
+              </div>
+              
+              {/* Legend Explanation */}
+              <div className="mt-3 text-sm text-gray-600 text-center">
+                <span className="font-medium">ص = رقم الصفحة</span> - يظهر رقم الصفحة التي تم تقييمها في كل خلية
               </div>
             </CardContent>
           </Card>
